@@ -1,0 +1,13 @@
+/mnt/work/brucesz/vio/course2_hw_new/install/_setup_util.py
+/mnt/work/brucesz/vio/course2_hw_new/install/env.sh
+/mnt/work/brucesz/vio/course2_hw_new/install/setup.bash
+/mnt/work/brucesz/vio/course2_hw_new/install/local_setup.bash
+/mnt/work/brucesz/vio/course2_hw_new/install/setup.sh
+/mnt/work/brucesz/vio/course2_hw_new/install/local_setup.sh
+/mnt/work/brucesz/vio/course2_hw_new/install/setup.zsh
+/mnt/work/brucesz/vio/course2_hw_new/install/local_setup.zsh
+/mnt/work/brucesz/vio/course2_hw_new/install/.rosinstall
+/mnt/work/brucesz/vio/course2_hw_new/install/lib/pkgconfig/vio_data_simulation.pc
+/mnt/work/brucesz/vio/course2_hw_new/install/share/vio_data_simulation/cmake/vio_data_simulationConfig.cmake
+/mnt/work/brucesz/vio/course2_hw_new/install/share/vio_data_simulation/cmake/vio_data_simulationConfig-version.cmake
+/mnt/work/brucesz/vio/course2_hw_new/install/share/vio_data_simulation/package.xml

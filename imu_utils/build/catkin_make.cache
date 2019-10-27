@@ -1,0 +1,2 @@
+code_utils:imu_utils
+-DCATKIN_DEVEL_PREFIX=/home/brucesz/work/brucesz/git/imu_utils/devel -DCMAKE_INSTALL_PREFIX=/home/brucesz/work/brucesz/git/imu_utils/install -G Unix Makefiles

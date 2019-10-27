@@ -1,0 +1,8 @@
+prefix=/mnt/work/brucesz/vio/course2_hw_new/devel
+
+Name: vio_data_simulation
+Description: Description of vio_data_simulation
+Version: 0.0.0
+Cflags: 
+Libs: -L/mnt/work/brucesz/vio/course2_hw_new/devel/lib 
+Requires: 
