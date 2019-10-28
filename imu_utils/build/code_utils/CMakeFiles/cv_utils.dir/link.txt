@@ -1,2 +1,0 @@
-/usr/bin/ar qc /home/brucesz/work/brucesz/git/imu_utils/devel/lib/libcv_utils.a  CMakeFiles/cv_utils.dir/src/cv_utils.cc.o
-/usr/bin/ranlib /home/brucesz/work/brucesz/git/imu_utils/devel/lib/libcv_utils.a

@@ -1,2 +1,0 @@
-vio_data_simulation-ros_version
--DCATKIN_DEVEL_PREFIX=/mnt/work/brucesz/vio/course2_hw_new/devel -DCMAKE_INSTALL_PREFIX=/mnt/work/brucesz/vio/course2_hw_new/install -G Unix Makefiles
