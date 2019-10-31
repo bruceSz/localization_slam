@@ -10,7 +10,7 @@
 int main(int argc, char** argv)
 {
     const std::string home_path = getenv("HOME");
-    const std::string bag_path = home_path + "/imu.bag";
+    const std::string bag_path = home_path + "/imu_15_gyro.bag";
     rosbag::Bag bag;
     bag.open(bag_path, rosbag::bagmode::Write);
 

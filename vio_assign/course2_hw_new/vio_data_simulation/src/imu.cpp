@@ -144,7 +144,7 @@ void IMU::testImu(std::string src, std::string dist)
         dq.y() = dtheta_half.y();
         dq.z() = dtheta_half.z();
         dq.normalize();
-    #define euler 1
+    #define euler 0
     #ifdef euler
         /// imu 动力学模型 欧拉积分
          Eigen::Vector3d acc_w = Qwb * (imupose.imu_acc) + gw;  // aw = Rwb * ( acc_body - acc_bias ) + gw
@@ -153,16 +153,12 @@ void IMU::testImu(std::string src, std::string dist)
          Vw = Vw + acc_w * dt;
         
     #else
+        std::cerr << "Begin to compute int with mid_val method." << std::endl;
         /// 中值积分 
-        int next_idx = i;
-        if (i < imudata.size()-1) {
-            int next_idx = i+1;
-        } else {
-            int next_idx = i;
-        }
-        MotionData next_pos = imudata[next_idx];
+        int pre_idx = i-1;
+        MotionData pre_pos = imudata[pre_idx];
         // w = 1/2 * ((w_k - bk) + (w_k_1 - bk)) 
-        auto w_m = 0.5*(imupose.imu_gyro + next_pos.imu_gyro);
+        auto w_m = 0.5*(imupose.imu_gyro + pre_pos.imu_gyro);
         Eigen::Quaterniond dq_m;
         Eigen::Vector3d dtheta_half_m =  w_m * dt /2.0;
         dq_m.w() = 1;
@@ -172,7 +168,7 @@ void IMU::testImu(std::string src, std::string dist)
         dq_m.normalize();
 
         auto Qwb_n = Qwb * dq_m;
-        Eigen::Vector3d acc_w =  0.5 * (Qwb*(imupose.imu_acc)+gw + Qwb_n*(next_pos.imu_acc)+ gw);
+        Eigen::Vector3d acc_w =  0.5 * (Qwb*(pre_pose.imu_acc)+gw + Qwb_n*(imupose.imu_acc)+ gw);
         // aw =  1/2( Rwb*(acc_body_k - acc_bias) + gw + Rwb_k_1*(acc_body_k_1 - acc_bias) + gw ),
         //   assume acc_bias not change overtime
         
