@@ -4,6 +4,7 @@
 #include <glog/logging.h>
 #include "backend/problem.h"
 #include "utils/tic_toc.h"
+#include <iomanip>
 
 #ifdef USE_OPENMP
 
@@ -91,7 +92,10 @@ bool Problem::Solve(int iterations) {
             RemoveLambdaHessianLM();
 
             // 优化退出条件1： delta_x_ 很小则退出
-            if (delta_x_.squaredNorm() <= 1e-6 || false_cnt > 10) {
+            if (delta_x_.squaredNorm() <= 1e-8 || false_cnt > 10) {
+                std::cout << "Stop earlier. " << std::setprecision(15) << "squared norm: "  << delta_x_.squaredNorm()
+                << " False count: " << false_cnt  
+                << std::endl;
                 stop = true;
                 break;
             }
