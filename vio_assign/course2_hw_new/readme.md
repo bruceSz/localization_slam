@@ -1,6 +1,7 @@
 代码有两个压缩包,一个是ros, 一个非ros
 
 #### 1. 对非 ros : 生成运动 imu 数据
+### moved to vio_assignment dir
 
 1. 编译 
 
@@ -11,6 +12,7 @@
 4. 换成中值积分, 再重做一遍上述1,2,3过程
 
 #### 2. 对ROS: 专门生成静止 imu 数据，用于 allan 方差标定
+### moved to localization_slam/src dir
 
 ##### 2.1 使用 imu_utils 完成 allan 标定
 
