@@ -147,6 +147,8 @@ void Problem::SetOrdering() {
     }
 }
 
+
+// jTj
 void Problem::MakeHessian() {
     TicToc t_h;
     // 直接构造大的 H 矩阵
@@ -239,10 +241,11 @@ void Problem::RollbackStates() {
     }
 }
 
-/// LM
+/// LM: 4.1.1 lambda update strategy 1.
 void Problem::ComputeLambdaInitLM() {
     ni_ = 2.;
-    currentLambda_ = -1.;
+
+    currentLambda_ = 1e-2;
     currentChi_ = 0.0;
     // TODO:: robust cost chi2
     for (auto edge: edges_) {
@@ -253,38 +256,47 @@ void Problem::ComputeLambdaInitLM() {
 
     stopThresholdLM_ = 1e-6 * currentChi_;          // 迭代条件为 误差下降 1e-6 倍
 
-    double maxDiagonal = 0;
-    ulong size = Hessian_.cols();
-    assert(Hessian_.rows() == Hessian_.cols() && "Hessian is not square");
-    for (ulong i = 0; i < size; ++i) {
-        maxDiagonal = std::max(fabs(Hessian_(i, i)), maxDiagonal);
-    }
+    //double maxDiagonal = 0;
+    //ulong size = Hessian_.cols();
+    //assert(Hessian_.rows() == Hessian_.cols() && "Hessian is not square");
+    //for (ulong i = 0; i < size; ++i) {
+    //    maxDiagonal = std::max(fabs(Hessian_(i, i)), maxDiagonal);
+    //}
     double tau = 1e-5;
-    currentLambda_ = tau * maxDiagonal;
+    // in strategy 1, currentLambda_ is set to lambda_0 
+    //currentLambda_ = tau * maxDiagonal;
 }
 
 void Problem::AddLambdatoHessianLM() {
     ulong size = Hessian_.cols();
     assert(Hessian_.rows() == Hessian_.cols() && "Hessian is not square");
-
+    // backup hessian
+    Hessian_back_ = Hessian_;
+    //  JtWJ + lambda*diag(diag(JtWJ))
     for (ulong i = 0; i < size; ++i) {
-        Hessian_(i, i) += currentLambda_ ;
+        Hessian_(i, i) += currentLambda_ * Hessian_(i,i);
     }
 }
 
 void Problem::RemoveLambdaHessianLM() {
     ulong size = Hessian_.cols();
     assert(Hessian_.rows() == Hessian_.cols() && "Hessian is not square");
+    Hessian_ = Hessian_back_;
     // TODO:: 这里不应该减去一个，数值的反复加减容易造成数值精度出问题？而应该保存叠加lambda前的值，在这里直接赋值
-    for (ulong i = 0; i < size; ++i) {
-        Hessian_(i, i) -= currentLambda_;
-    }
+    //for (ulong i = 0; i < size; ++i) {
+    //    Hessian_(i, i) -= currentLambda_;
+    //}
 }
 
 bool Problem::IsGoodStepInLM() {
     double scale = 0;
-    scale = delta_x_.transpose() * (currentLambda_ * delta_x_ + b_);
-    scale += 1e-3;    // make sure it's non-zero :)
+    MatXX diag(Hessian_.rows(),Hessian_.cols());
+    for(int i = 0;i<Hessian_.cols();i++) {
+        diag(i,i) = Hessian_(i,i);
+    }
+    scale = delta_x_.transpose() * (currentLambda_ * diag  * delta_x_ + b_);
+    //scale = delta_x_.transpose() * (currentLambda_ * delta_x_ + b_);
+    //scale += 1e-3;    // make sure it's non-zero :)
 
     // recompute residuals after update state
     // 统计所有的残差
@@ -295,18 +307,22 @@ bool Problem::IsGoodStepInLM() {
     }
 
     double rho = (currentChi_ - tempChi) / scale;
-    if (rho > 0 && isfinite(tempChi))   // last step was good, 误差在下降
+    // rho greater than some val.
+    if (rho > 1e-1 && isfinite(tempChi))   // last step was good, 误差在下降
     {
-        double alpha = 1. - pow((2 * rho - 1), 3);
-        alpha = std::min(alpha, 2. / 3.);
-        double scaleFactor = (std::max)(1. / 3., alpha);
-        currentLambda_ *= scaleFactor;
-        ni_ = 2;
+        currentLambda_ = std::max(currentLambda_/9,1e-7);
+        //double alpha = 1. - pow((2 * rho - 1), 3);
+        //alpha = std::min(alpha, 2. / 3.);
+        //double scaleFactor = (std::max)(1. / 3., alpha);
+        //currentLambda_ *= scaleFactor;
+        //ni_ = 2;
         currentChi_ = tempChi;
         return true;
     } else {
-        currentLambda_ *= ni_;
-        ni_ *= 2;
+        // lambda = min(lambda*lam bda_UP_fac,1.e7)
+        currentLambda_ = std::min(currentLambda_ *11 , 1e+7);
+        //currentLambda_ *= ni_;
+        //ni_ *= 2;
         return false;
     }
 }

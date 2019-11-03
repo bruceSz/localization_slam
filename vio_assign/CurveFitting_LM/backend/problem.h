@@ -135,6 +135,7 @@ private:
     /// LM 算法中用于判断 Lambda 在上次迭代中是否可以，以及Lambda怎么缩放
     bool IsGoodStepInLM();
 
+    double computeAlpha();
     /// PCG 迭代线性求解器
     VecX PCGSolver(const MatXX &A, const VecX &b, int maxIter);
 
@@ -147,8 +148,10 @@ private:
 
     /// 整个信息矩阵
     MatXX Hessian_;
+    MatXX Hessian_back_;
     VecX b_;
     VecX delta_x_;
+    double alpha_;
 
     /// 先验部分信息
     MatXX H_prior_;

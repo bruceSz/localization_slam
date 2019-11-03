@@ -58,6 +58,17 @@ bool Problem::AddEdge(shared_ptr<Edge> edge) {
     return true;
 }
 
+double Problem::computeAlpha() {
+    double tempChi = 0.0;
+    for (auto edge: edges_) {
+        edge.second->ComputeResidual();
+        tempChi += edge.second->Chi2();
+    }
+      auto alpha_tmp  = ( b_.transpose() * delta_x_) / ( 0.5* (currentChi_ - tempChi) + 2*b_.transpose()*delta_x_ );
+      auto alpha = alpha_tmp(0,0);
+    
+    return alpha;
+}
 
 bool Problem::Solve(int iterations) {
 
@@ -99,7 +110,7 @@ bool Problem::Solve(int iterations) {
                 stop = true;
                 break;
             }
-
+            
             // 更新状态量 X = X+ delta_x
             UpdateStates();
             // 判断当前步是否可行以及 LM 的 lambda 怎么更新
@@ -218,24 +229,26 @@ void Problem::SolveLinearSystem() {
 }
 
 void Problem::UpdateStates() {
+    auto alpha = computeAlpha();
     for (auto vertex: verticies_) {
         ulong idx = vertex.second->OrderingId();
         ulong dim = vertex.second->LocalDimension();
         VecX delta = delta_x_.segment(idx, dim);
 
         // 所有的参数 x 叠加一个增量  x_{k+1} = x_{k} + delta_x
-        vertex.second->Plus(delta);
+        vertex.second->Plus( alpha * delta);
     }
 }
 
 void Problem::RollbackStates() {
+    auto alpha = computeAlpha();
     for (auto vertex: verticies_) {
         ulong idx = vertex.second->OrderingId();
         ulong dim = vertex.second->LocalDimension();
         VecX delta = delta_x_.segment(idx, dim);
 
         // 之前的增量加了后使得损失函数增加了，我们应该不要这次迭代结果，所以把之前加上的量减去。
-        vertex.second->Plus(-delta);
+        vertex.second->Plus(- alpha* delta);
     }
 }
 
@@ -266,9 +279,8 @@ void Problem::ComputeLambdaInitLM() {
 void Problem::AddLambdatoHessianLM() {
     ulong size = Hessian_.cols();
     assert(Hessian_.rows() == Hessian_.cols() && "Hessian is not square");
-
     for (ulong i = 0; i < size; ++i) {
-        Hessian_(i, i) += currentLambda_ ;
+        Hessian_(i, i) += currentLambda_;
     }
 }
 
@@ -283,9 +295,9 @@ void Problem::RemoveLambdaHessianLM() {
 
 bool Problem::IsGoodStepInLM() {
     double scale = 0;
-    scale = delta_x_.transpose() * (currentLambda_ * delta_x_ + b_);
+    auto alpha  =  computeAlpha();
+    scale = (alpha *delta_x_.transpose()) * (currentLambda_ * (alpha*  delta_x_) + b_);
     scale += 1e-3;    // make sure it's non-zero :)
-
     // recompute residuals after update state
     // 统计所有的残差
     double tempChi = 0.0;
@@ -293,20 +305,29 @@ bool Problem::IsGoodStepInLM() {
         edge.second->ComputeResidual();
         tempChi += edge.second->Chi2();
     }
+    //JtWdy'*h / ( (X2_try - X2)/2 + 2*JtWdy'*h ) 
+    //auto alpha = computeAlpha();
+    std::cout << "alpha: " << alpha_ << " lambda: " << currentLambda_  << " tempChi: " << tempChi  << "current Chi: " << currentChi_ << std::endl;
+    
 
+    
     double rho = (currentChi_ - tempChi) / scale;
-    if (rho > 0 && isfinite(tempChi))   // last step was good, 误差在下降
+    if (rho > 1e-1 && isfinite(tempChi))   // last step was good, 误差在下降
     {
-        double alpha = 1. - pow((2 * rho - 1), 3);
-        alpha = std::min(alpha, 2. / 3.);
-        double scaleFactor = (std::max)(1. / 3., alpha);
-        currentLambda_ *= scaleFactor;
-        ni_ = 2;
+        // lambda = max( lambda/(1 + alpha) , 1.e-7 )
+        currentLambda_ = std::max(currentLambda_/(1+alpha_),1e-7);
+        //double alpha = 1. - pow((2 * rho - 1), 3);
+        //alpha = std::min(alpha, 2. / 3.);
+        //double scaleFactor = (std::max)(1. / 3., alpha);
+        //currentLambda_ *= scaleFactor;
+        //ni_ = 2;
         currentChi_ = tempChi;
         return true;
     } else {
-        currentLambda_ *= ni_;
-        ni_ *= 2;
+        // lambda + abs((X2_try - X2)/2/alpha)
+        currentLambda_ = currentLambda_ +  abs(currentChi_ - tempChi) / 2/ alpha_;
+        //currentLambda_ *= ni_;
+        //ni_ *= 2;
         return false;
     }
 }
