@@ -89,7 +89,7 @@ public:
     double x_,y_;  // x 值， y 值为 _measurement    
 };
 
-int main()
+int main1()
 {
     double a=1.0, b=2.0, c=1.0;         // 真实参数值
     int N = 100;                          // 数据点
@@ -139,6 +139,7 @@ int main()
     return 0;
 }
 
+
 int main2()
 {
     double a=1.0, b=2.0, c=1.0;         // 真实参数值
@@ -187,6 +188,10 @@ int main2()
 
     // std
     return 0;
+}
+
+int main() {
+   return main2();
 }
 
 

@@ -1,6 +1,6 @@
-## code execution result
+# code execution result
 
-#### default execution  (same  lambda update stragegy 3 in paper)
+### default execution  (same  lambda update stragegy 3 in paper)
  
 * 1  formular: y = exp(x*x*a + x*b +c)
 
@@ -33,7 +33,7 @@ problem solve cost: 3.220775 ms
  * 4 plot mu change with iteration, see mu_change.pdf 
 
 
-#### second execution (lambda update stategy 1 in paper, refer  problem_1.cc)
+### second execution (lambda update stategy 1 in paper, refer  problem_1.cc)
    * 1 formula:
       **  ifρi(h)> 4:p←p+h;λi+1= max[λi/L↓,10−7]
       ** otherwise:λi+1= min [λiL↑,107]
@@ -69,7 +69,7 @@ problem solve cost: 0.559499 ms
 
       </code>
 
-#### third execution (lambda update strategy 2 in paper, refer problem_2.cc)
+### third execution (lambda update strategy 2 in paper, refer problem_2.cc)
    * 1 formula:
       **  introduce alpha : α=((JTW(y−ˆy(p)))Th)/((χ2(p+h)−χ2(p))/2 + 2(JTW(y−ˆy(p)))Th)
       ** delta_x update has to consider this alpha
@@ -130,3 +130,32 @@ problem solve cost: 3.689344 ms stop threshold: 0.0360483445707366currentChi_: 9
 1.0,  2.0,  1.0
 
    </code> 
+
+   ### change curve function to 
+   * 1 formula:
+      y = y = a*x *x + b*x+c
+   * 2 change description:
+     * 1 entry function main2 
+     * 2 new CurveFittingEdge2 class for jacobians and new CurveFittingVertex2 class
+   * 3 execution result (with default lambda update logic):
+  
+   <code>Test CurveFitting start...
+iter: 0 , chi= 3.31191e+06 , Lambda= 19.95
+After update delta, chi: 97388.7
+ Old chi: 3.31191e+06 new tempChi: 97388.7 rho: 1 quare_norm of delta:  5.79731 lambda: 19.95
+iter: 1 , chi= 97388.7 , Lambda= 6.65001
+After update delta, chi: 97388
+ Old chi: 97388.7 new tempChi: 97388 rho: 0.998584 quare_norm of delta:  0.00032995 lambda: 6.65001
+iter: 2 , chi= 97388 , Lambda= 2.21667
+After update delta, chi: 97388
+ Old chi: 97388 new tempChi: 97388 rho: 0.022823 quare_norm of delta:  1.82289e-07 lambda: 2.21667
+iter: 3 , chi= 97388 , Lambda= 1.47778
+Stop earlier. squared norm: 9.42310463542048e-11 False count: 0
+problem solve cost: 1.781528 ms
+   makeHessian cost: 1.187802 ms
+-------After optimization, we got these parameters :
+0.995892399275448  2.06283090098366 0.788217740550153
+-------ground truth: 
+1.0,  2.0,  1.0
+
+    </code>
