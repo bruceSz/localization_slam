@@ -216,6 +216,14 @@ void Problem::SolveLinearSystem() {
 //        delta_x_ = H.ldlt().solve(b_);
 
 }
+double Problem::computeCurrentChi() {
+    double tempChi = 0.0;
+    for (auto edge: edges_) {
+        edge.second->ComputeResidual();
+        tempChi += edge.second->Chi2();
+    }
+    return tempChi;
+}
 
 void Problem::UpdateStates() {
     for (auto vertex: verticies_) {
@@ -226,6 +234,7 @@ void Problem::UpdateStates() {
         // 所有的参数 x 叠加一个增量  x_{k+1} = x_{k} + delta_x
         vertex.second->Plus(delta);
     }
+    std::cout << "After update delta, chi: " << computeCurrentChi() << std::endl;
 }
 
 void Problem::RollbackStates() {
@@ -295,6 +304,8 @@ bool Problem::IsGoodStepInLM() {
     }
 
     double rho = (currentChi_ - tempChi) / scale;
+    std::cout<< " Old chi: " << currentChi_ << " new tempChi: " << tempChi << " rho: " << rho 
+        << " quare_norm of delta:  " << delta_x_.squaredNorm() << " lambda: " << currentLambda_ << std::endl;
     if (rho > 0 && isfinite(tempChi))   // last step was good, 误差在下降
     {
         double alpha = 1. - pow((2 * rho - 1), 3);

@@ -226,6 +226,7 @@ void Problem::UpdateStates() {
         VecX delta = delta_x_.segment(idx, dim);
 
         // 所有的参数 x 叠加一个增量  x_{k+1} = x_{k} + delta_x
+        std::cout<< "update: \n" << delta << std::endl;
         vertex.second->Plus(delta);
     }
 }
@@ -237,6 +238,7 @@ void Problem::RollbackStates() {
         VecX delta = delta_x_.segment(idx, dim);
 
         // 之前的增量加了后使得损失函数增加了，我们应该不要这次迭代结果，所以把之前加上的量减去。
+        std::cout<< "rollback: \n" << delta << std::endl;
         vertex.second->Plus(-delta);
     }
 }

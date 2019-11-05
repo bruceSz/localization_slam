@@ -136,6 +136,8 @@ private:
     bool IsGoodStepInLM();
 
     double computeAlpha();
+
+    double computeCurrentChi();
     /// PCG 迭代线性求解器
     VecX PCGSolver(const MatXX &A, const VecX &b, int maxIter);
 
@@ -151,7 +153,7 @@ private:
     MatXX Hessian_back_;
     VecX b_;
     VecX delta_x_;
-    double alpha_;
+    //double alpha_;
 
     /// 先验部分信息
     MatXX H_prior_;

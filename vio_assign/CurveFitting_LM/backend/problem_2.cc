@@ -59,14 +59,21 @@ bool Problem::AddEdge(shared_ptr<Edge> edge) {
 }
 
 double Problem::computeAlpha() {
-    double tempChi = 0.0;
-    for (auto edge: edges_) {
-        edge.second->ComputeResidual();
-        tempChi += edge.second->Chi2();
-    }
-      auto alpha_tmp  = ( b_.transpose() * delta_x_) / ( 0.5* (currentChi_ - tempChi) + 2*b_.transpose()*delta_x_ );
-      auto alpha = alpha_tmp(0,0);
-    
+    //double tempChi = 0.0;
+    //for (auto edge: edges_) {
+    //    edge.second->ComputeResidual();
+    //    tempChi += edge.second->Chi2();
+    //}
+    auto tempChi = computeCurrentChi();
+    // 
+    auto alpha_tmp  = ( b_.transpose() * delta_x_) / ( (tempChi - currentChi_) / 2 + 2*b_.transpose()*delta_x_ );
+    //std::cout<< "Computing alpha: " << " nominator: " << (b_.transpose() * delta_x_) << " denominator: " 
+    //    << ( (tempChi - currentChi_) / 2 + 2*b_.transpose()*delta_x_ ) 
+    //    << " r: " << tempChi - currentChi_ << " tempChi: " << tempChi  << " old chi: " << currentChi_
+    //    << std::endl;
+    auto alpha = alpha_tmp(0,0);
+    alpha = std::max(1e-1, alpha);
+    //std::cout << "tmpChi when computing alpha: " << tempChi << " old chi: " << currentChi_ << "computed alpha: " << alpha << std::endl;
     return alpha;
 }
 
@@ -98,7 +105,10 @@ bool Problem::Solve(int iterations) {
             // setLambda
             AddLambdatoHessianLM();
             // 第四步，解线性方程 H X = B
+            
+            //std::cout << " old chi: "  << currentChi_ << std::endl;
             SolveLinearSystem();
+            
             //
             RemoveLambdaHessianLM();
 
@@ -113,6 +123,9 @@ bool Problem::Solve(int iterations) {
             
             // 更新状态量 X = X+ delta_x
             UpdateStates();
+            
+            //tmpChi = computeCurrentChi();
+            
             // 判断当前步是否可行以及 LM 的 lambda 怎么更新
             oneStepSuccess = IsGoodStepInLM();
             // 后续处理，
@@ -138,7 +151,7 @@ bool Problem::Solve(int iterations) {
         if (sqrt(currentChi_) <= stopThresholdLM_)
             stop = true;
     }
-    std::cout << "problem solve cost: " << t_solve.toc() << " ms" << std::endl;
+    std::cout << "problem solve cost: " << t_solve.toc() << " ms" << " stop threshold: " << stopThresholdLM_ << "currentChi_: " << sqrt(currentChi_) << std::endl;
     std::cout << "   makeHessian cost: " << t_hessian_cost_ << " ms" << std::endl;
     return true;
 }
@@ -229,26 +242,27 @@ void Problem::SolveLinearSystem() {
 }
 
 void Problem::UpdateStates() {
-    auto alpha = computeAlpha();
+    
+
     for (auto vertex: verticies_) {
         ulong idx = vertex.second->OrderingId();
         ulong dim = vertex.second->LocalDimension();
         VecX delta = delta_x_.segment(idx, dim);
 
         // 所有的参数 x 叠加一个增量  x_{k+1} = x_{k} + delta_x
-        vertex.second->Plus( alpha * delta);
+        vertex.second->Plus( delta);
     }
+    //std::cout << "After update delta x, chi: " << computeCurrentChi() << std::endl;
 }
 
 void Problem::RollbackStates() {
-    auto alpha = computeAlpha();
     for (auto vertex: verticies_) {
         ulong idx = vertex.second->OrderingId();
         ulong dim = vertex.second->LocalDimension();
         VecX delta = delta_x_.segment(idx, dim);
 
         // 之前的增量加了后使得损失函数增加了，我们应该不要这次迭代结果，所以把之前加上的量减去。
-        vertex.second->Plus(- alpha* delta);
+        vertex.second->Plus(- delta);
     }
 }
 
@@ -293,41 +307,53 @@ void Problem::RemoveLambdaHessianLM() {
     }
 }
 
-bool Problem::IsGoodStepInLM() {
-    double scale = 0;
-    auto alpha  =  computeAlpha();
-    scale = (alpha *delta_x_.transpose()) * (currentLambda_ * (alpha*  delta_x_) + b_);
-    scale += 1e-3;    // make sure it's non-zero :)
-    // recompute residuals after update state
-    // 统计所有的残差
+double Problem::computeCurrentChi() {
     double tempChi = 0.0;
     for (auto edge: edges_) {
         edge.second->ComputeResidual();
         tempChi += edge.second->Chi2();
     }
-    //JtWdy'*h / ( (X2_try - X2)/2 + 2*JtWdy'*h ) 
-    //auto alpha = computeAlpha();
-    std::cout << "alpha: " << alpha_ << " lambda: " << currentLambda_  << " tempChi: " << tempChi  << "current Chi: " << currentChi_ << std::endl;
+    return tempChi;
+}
+
+bool Problem::IsGoodStepInLM() {
+    double scale = 0;
+    auto alpha  =  computeAlpha();
+    //alpha_ = alpha;
+    auto alpha_delta = alpha * delta_x_;
+    std::cout << "alpha of delta x: " << alpha << std::endl;
+    scale = alpha_delta.transpose() * (currentLambda_ * (  alpha_delta) + b_);
+    scale += 1e-3;    // make sure it's non-zero :)
+    
+    // recover p  from p+h
+    RollbackStates();
+    auto tempChi_ = computeCurrentChi();
+    //std::cout << "old chi: " << tempChi_ << std::endl;
+    // p = p + alpha * h 
+    delta_x_ = alpha_delta;
     
 
+    UpdateStates();
+    tempChi_ = computeCurrentChi();
+
+
     
-    double rho = (currentChi_ - tempChi) / scale;
-    if (rho > 1e-1 && isfinite(tempChi))   // last step was good, 误差在下降
+    double rho = (currentChi_ - tempChi_) / scale;
+    //std::cout << "alpha: " << alpha << " lambda: " << currentLambda_  << " tempChi: " << tempChi_  
+    //     << "current Chi: " << currentChi_  << " scale: " << scale
+    //     << "rho: " << rho
+    //     << std::endl;
+    if (rho > 1e-1 && isfinite(tempChi_))   // last step was good, 误差在下降
     {
-        // lambda = max( lambda/(1 + alpha) , 1.e-7 )
-        currentLambda_ = std::max(currentLambda_/(1+alpha_),1e-7);
-        //double alpha = 1. - pow((2 * rho - 1), 3);
-        //alpha = std::min(alpha, 2. / 3.);
-        //double scaleFactor = (std::max)(1. / 3., alpha);
-        //currentLambda_ *= scaleFactor;
-        //ni_ = 2;
-        currentChi_ = tempChi;
+        
+        currentLambda_ = std::max(currentLambda_/(1+alpha),1e-7);
+        //std::cout << "rho ok, new lambda: " << currentLambda_ << std::endl;
+        currentChi_ = tempChi_;
         return true;
     } else {
-        // lambda + abs((X2_try - X2)/2/alpha)
-        currentLambda_ = currentLambda_ +  abs(currentChi_ - tempChi) / 2/ alpha_;
-        //currentLambda_ *= ni_;
-        //ni_ *= 2;
+        
+        currentLambda_ = currentLambda_ +  abs(tempChi_ - currentChi_) / (2* alpha);
+        std::cout << "rho not good, new lambda: " << currentLambda_ << std::endl;
         return false;
     }
 }
