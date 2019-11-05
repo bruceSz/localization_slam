@@ -75,4 +75,58 @@ problem solve cost: 0.559499 ms
       ** delta_x update has to consider this alpha
       ** lambda update consider alpha too.
    * 2 change description
-      ** 
+      ** mainly in IsGoodStepInLM function.
+   * 3 execution result:
+     <code>Test CurveFitting start...
+iter: 0 , chi= 36048.3 , Lambda= 0.001
+alpha of delta x: 0.1
+iter: 1 , chi= 9294.65 , Lambda= 0.000909091
+alpha of delta x: 0.42032
+iter: 2 , chi= 3097.71 , Lambda= 0.000640061
+alpha of delta x: 0.66358
+iter: 3 , chi= 436.783 , Lambda= 0.000384749
+alpha of delta x: 0.665828
+iter: 4 , chi= 132.226 , Lambda= 0.000230966
+alpha of delta x: 0.666107
+iter: 5 , chi= 96.0453 , Lambda= 0.000138626
+alpha of delta x: 0.666174
+iter: 6 , chi= 91.9154 , Lambda= 8.32001e-05
+alpha of delta x: 0.666197
+iter: 7 , chi= 91.4535 , Lambda= 4.99341e-05
+alpha of delta x: 0.666211
+iter: 8 , chi= 91.4022 , Lambda= 2.99687e-05
+alpha of delta x: 0.666224
+iter: 9 , chi= 91.3966 , Lambda= 1.7986e-05
+alpha of delta x: 0.666236
+iter: 10 , chi= 91.3959 , Lambda= 1.07944e-05
+alpha of delta x: 0.666248
+rho not good, new lambda: 6.2847e-05
+alpha of delta x: 0.666249
+rho not good, new lambda: 0.0001149
+alpha of delta x: 0.666249
+rho not good, new lambda: 0.000166952
+alpha of delta x: 0.666249
+rho not good, new lambda: 0.000219005
+alpha of delta x: 0.666249
+rho not good, new lambda: 0.000271057
+alpha of delta x: 0.66625
+rho not good, new lambda: 0.00032311
+alpha of delta x: 0.66625
+rho not good, new lambda: 0.000375162
+alpha of delta x: 0.66625
+rho not good, new lambda: 0.000427214
+alpha of delta x: 0.66625
+rho not good, new lambda: 0.000479267
+alpha of delta x: 0.666251
+rho not good, new lambda: 0.000531319
+alpha of delta x: 0.666251
+rho not good, new lambda: 0.000583371
+Stop earlier. squared norm: 1.67961362254066e-06 False count: 11
+problem solve cost: 3.689344 ms stop threshold: 0.0360483445707366currentChi_: 9.56012251888294
+   makeHessian cost: 1.623731 ms
+-------After optimization, we got these parameters :
+0.942663542790209  2.09369918914733 0.965767761753611
+-------ground truth: 
+1.0,  2.0,  1.0
+
+   </code> 

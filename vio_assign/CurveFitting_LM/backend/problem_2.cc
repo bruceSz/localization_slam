@@ -332,11 +332,8 @@ bool Problem::IsGoodStepInLM() {
     // p = p + alpha * h 
     delta_x_ = alpha_delta;
     
-
     UpdateStates();
     tempChi_ = computeCurrentChi();
-
-
     
     double rho = (currentChi_ - tempChi_) / scale;
     //std::cout << "alpha: " << alpha << " lambda: " << currentLambda_  << " tempChi: " << tempChi_  
@@ -345,7 +342,6 @@ bool Problem::IsGoodStepInLM() {
     //     << std::endl;
     if (rho > 1e-1 && isfinite(tempChi_))   // last step was good, 误差在下降
     {
-        
         currentLambda_ = std::max(currentLambda_/(1+alpha),1e-7);
         //std::cout << "rho ok, new lambda: " << currentLambda_ << std::endl;
         currentChi_ = tempChi_;
