@@ -68,9 +68,9 @@ int main()
 
             H.block(i*6,i*6,6,6) += jacobian_Ti.transpose() * jacobian_Ti;
             /// 请补充完整作业信息矩阵块的计算
-	    // H.block(?,?,?,?) += ?;
-	    // H.block(?,?,?,?) += ?;
-            // H.block(?,?,?,?) += ?;
+	        H.block(i*6, poseNums*6+j*3, 6, 3) += jacobian_Ti.transpose()*jacobian_Pj;
+	        H.block(poseNums*6 + j*3,i*6,3,6) += jacobian_Pj.transpose()* jacobian_Ti;
+            H.block(poseNums*6+j*3,poseNums*6+j*3,3,3) += jacobian_Pj.transpose()*jacobian_Pj;
         }
     }
 
@@ -79,7 +79,8 @@ int main()
 //    std::cout << saes.eigenvalues() <<std::endl;
 
     Eigen::JacobiSVD<Eigen::MatrixXd> svd(H, Eigen::ComputeThinU | Eigen::ComputeThinV);
+    
     std::cout << svd.singularValues() <<std::endl;
-  
+    std::cout << "dimension of H is : " << H.size() << std::endl;
     return 0;
 }
