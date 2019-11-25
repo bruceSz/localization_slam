@@ -12,7 +12,9 @@
 
 #include "backend/eigen_types.h"
 #include "backend/edge.h"
+#include "gflags/gflags.h"
 
+DECLARE_double(prior_w);
 
 namespace myslam {
 namespace backend {
@@ -26,7 +28,9 @@ public:
 
     EdgeSE3Prior(const Vec3 &p, const Qd &q) :
             Edge(6, 1, std::vector<std::string>{"VertexPose"}),
-            Pp_(p), Qp_(q) {}
+            Pp_(p), Qp_(q) {
+                information_ = information_ * FLAGS_prior_w;
+            }
 
     /// 返回边的类型信息
     virtual std::string TypeInfo() const override { return "EdgeSE3Prior"; }

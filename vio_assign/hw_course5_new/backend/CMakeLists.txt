@@ -9,3 +9,7 @@ add_library(${PROJECT_NAME}_backend
         loss_function.cc
         imu_integration.cc
         )
+
+target_link_libraries(${PROJECT_NAME}_backend
+    gflags
+)

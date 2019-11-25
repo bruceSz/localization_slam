@@ -4,10 +4,14 @@
 #include "backend/vertex_pose.h"
 #include "backend/edge_reprojection.h"
 #include "backend/problem.h"
+#include "backend/edge_prior.h"
+#include "gflags/gflags.h"
 
 using namespace myslam::backend;
 using namespace std;
 
+
+DEFINE_bool(add_prior, false, "whether to use prior");
 /*
  * Frame : 保存每帧的姿态和观测
  */
@@ -58,7 +62,8 @@ void GetSimDataInWordFrame(vector<Frame> &cameraPoses, vector<Eigen::Vector3d> &
     }
 }
 
-int main() {
+int main(int argc, char** argv) {
+    google::ParseCommandLineFlags(&argc, &argv, false);
     // 准备数据
     vector<Frame> cameras;
     vector<Eigen::Vector3d> points;
@@ -124,7 +129,30 @@ int main() {
         }
     }
 
-    problem.Solve(5);
+    // add first and second point's prior.
+    auto pw0 = points[0];
+    auto camera0 = cameras[0].qwc;
+    auto pw1 = points[1];
+    auto camera1 = cameras[1].qwc;
+    //auto pc0 = cameras[0].Rwc.transpose() * (pw0 - cameras[0].twc);
+    //auto pc1 = cameras[0].Rwc.transpose() * (pw1 - cameras[0].twc);
+    std::shared_ptr<EdgeSE3Prior> prior0(new EdgeSE3Prior(pw0,camera0));
+
+    std::vector<std::shared_ptr<Vertex> > edge_vertex0;
+    edge_vertex0.push_back(vertexCams_vec[0]);
+    prior0->SetVertex(edge_vertex0);
+    std::shared_ptr<EdgeSE3Prior> prior1(new EdgeSE3Prior(pw1,camera1));
+    std::vector<std::shared_ptr<Vertex> > edge_vertex1;
+    edge_vertex1.push_back(vertexCams_vec[1]);
+    prior1->SetVertex(edge_vertex1);
+    
+    if (FLAGS_add_prior) {
+        problem.AddEdge(prior0);
+        problem.AddEdge(prior1);
+    }
+
+    // solve the proble based on normal equation.
+    problem.Solve(10);
 
     std::cout << "\nCompare MonoBA results after opt..." << std::endl;
     for (size_t k = 0; k < allPoints.size(); k+=1) {

@@ -11,6 +11,8 @@
 
 #define USE_SO3_JACOBIAN 1
 
+DEFINE_double(prior_w, 1.0, "prior weight of prior edge in backend.");
+
 namespace myslam {
 namespace backend {
 
