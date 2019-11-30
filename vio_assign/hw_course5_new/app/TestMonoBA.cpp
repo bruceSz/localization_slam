@@ -155,10 +155,13 @@ int main(int argc, char** argv) {
     problem.Solve(10);
 
     std::cout << "\nCompare MonoBA results after opt..." << std::endl;
+    double total_abs_err = 0.0;
     for (size_t k = 0; k < allPoints.size(); k+=1) {
+        total_abs_err  += std::abs(allPoints[k]->Parameters()[0] - 1. / points[k].z());
         std::cout << "after opt, point " << k << " : gt " << 1. / points[k].z() << " ,noise "
-                  << noise_invd[k] << " ,opt " << allPoints[k]->Parameters() << std::endl;
+                  << noise_invd[k] << " ,opt " << allPoints[k]->Parameters() << " abs err: " << std::abs(allPoints[k]->Parameters()[0] - 1. / points[k].z()) << std::endl;
     }
+    std::cout << "Total abs error : " << total_abs_err << std::endl;
     std::cout<<"------------ pose translation ----------------"<<std::endl;
     for (int i = 0; i < vertexCams_vec.size(); ++i) {
         std::cout<<"translation after opt: "<< i <<" :"<< vertexCams_vec[i]->Parameters().head(3).transpose() << " || gt: "<<cameras[i].twc.transpose()<<std::endl;
