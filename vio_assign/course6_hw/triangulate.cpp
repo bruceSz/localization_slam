@@ -62,6 +62,12 @@ int main()
     Eigen::Vector3d P_est;           // 结果保存到这个变量
     P_est.setZero();
     /* your code begin */
+    //1. compute D matrix , using projection relationship, each camera pose relate to two line.
+
+    //2. svd the D matrix, output singular values , find the smallest. singlar value. 
+
+    //3. validate the result: comparing u3 and u4 
+
  
     /* your code end */
     
