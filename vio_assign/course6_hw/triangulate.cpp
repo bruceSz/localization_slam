@@ -16,7 +16,48 @@ struct Pose
     Eigen::Vector3d twc;
 
     Eigen::Vector2d uv;    // 这帧图像观测到的特征坐标
+
 };
+
+
+void triangulatePoint(const Pose& pose0_r, const Pose& pose1_r,
+    /*Eigen::Matrix<double, 3, 4> &Pose0, Eigen::Matrix<double, 3, 4> &Pose1,*/
+                        Eigen::Vector2d &point0, Eigen::Vector2d &point1, Eigen::Vector3d &point_3d)
+{
+    //1. compute D matrix , using projection relationship, each camera pose relate to two line.
+    auto R = pose0_r.Rwc;
+    auto t = pose0_r.twc;
+    Mat point0 = (Mat_<float> (3,4) <<
+        R.at<double>(0,0), R.at<double>(0,1), R.at<double>(0,2), t.at<double>(0,0),
+        R.at<double>(1,0), R.at<double>(1,1), R.at<double>(1,2), t.at<double>(1,0),
+        R.at<double>(2,0), R.at<double>(2,1), R.at<double>(2,2), t.at<double>(2,0)
+        );
+
+    R = pose1_r.Rwc;
+    t= pose1_r.twc;
+    Mat point1 = (Mat_<float> (3,4) <<
+        R.at<double>(0,0), R.at<double>(0,1), R.at<double>(0,2), t.at<double>(0,0),
+        R.at<double>(1,0), R.at<double>(1,1), R.at<double>(1,2), t.at<double>(1,0),
+        R.at<double>(2,0), R.at<double>(2,1), R.at<double>(2,2), t.at<double>(2,0)
+    );
+    //2. svd the D matrix, output singular values , find the smallest. singlar value. 
+    //  using jacobiSvd
+
+    //3. validate the result: comparing u3 and u4 
+    Eigen::Matrix4d design_matrix = Eigen::Matrix4d::Zero();
+    design_matrix.row(0) = point0[0] * Pose0.row(2) - Pose0.row(0);
+    design_matrix.row(1) = point0[1] * Pose0.row(2) - Pose0.row(1);
+    design_matrix.row(2) = point1[0] * Pose1.row(2) - Pose1.row(0);
+    design_matrix.row(3) = point1[1] * Pose1.row(2) - Pose1.row(1);
+    Eigen::Vector4d triangulated_point;
+    triangulated_point =
+              design_matrix.jacobiSvd(Eigen::ComputeFullV).matrixV().rightCols<1>();
+    point_3d(0) = triangulated_point(0) / triangulated_point(3);
+    point_3d(1) = triangulated_point(1) / triangulated_point(3);
+    point_3d(2) = triangulated_point(2) / triangulated_point(3);
+}
+
+
 int main()
 {
 
@@ -62,12 +103,8 @@ int main()
     Eigen::Vector3d P_est;           // 结果保存到这个变量
     P_est.setZero();
     /* your code begin */
-    //1. compute D matrix , using projection relationship, each camera pose relate to two line.
-
-    //2. svd the D matrix, output singular values , find the smallest. singlar value. 
-
-    //3. validate the result: comparing u3 and u4 
-
+    
+    triangulatePoint( camera_pose[0], camera_pose[1], camera_pose[0].uv, camera_pose[1].uv, P_est);
  
     /* your code end */
     
