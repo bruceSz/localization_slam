@@ -8,6 +8,17 @@
 #include <Eigen/Geometry>
 #include <Eigen/Eigenvalues>
 
+
+#include <opencv2/core.hpp>
+#include <opencv2/core/eigen.hpp>
+#include <opencv2/core/mat.hpp>
+
+#include <gflags/gflags.h>
+
+DEFINE_int32(n_frame, 2, "number of key frame.");
+
+using namespace cv;
+
 struct Pose
 {
     Pose(Eigen::Matrix3d R, Eigen::Vector3d t):Rwc(R),qwc(R),twc(t) {};
@@ -20,6 +31,35 @@ struct Pose
 };
 
 
+void multiFrameTriangulateP(std::vector<Pose>& pose_v, std::vector<Eigen::Vector2d>& image_p_v, Eigen::Vector3d& point_3d, int n_frame) {
+    assert(n_frame < pose_v.size());
+    assert(pose_v.size() == image_p_v.size());
+    Eigen::MatrixX4d design_matrix ;
+    design_matrix.resize(n_frame*2, Eigen::NoChange);
+    for(int i=0; i < n_frame ; i++) {
+        auto R  = pose_v[i].Rwc;
+        auto t  = pose_v[i].twc;
+        Eigen::Matrix<double, 3,4> Pose;
+        Pose <<
+            R(0,0), R(0,1), R(0,2), t(0,0),
+            R(1,0), R(1,1), R(1,2), t(1,0),
+            R(2,0), R(2,1), R(2,2), t(2,0);
+        design_matrix.row(i*2) = image_p_v[i][0] * Pose.row(2) - Pose.row(0);
+        design_matrix.row(1*2+1) = image_p_v[i][1] * Pose.row(2) - Pose.row(1);
+    }
+
+    Eigen::Vector4d triangulated_point;
+    auto res = design_matrix.jacobiSvd(Eigen::ComputeFullV);
+    triangulated_point =
+              res.matrixV().rightCols<1>();
+
+    std::cout<< "Singular values: \n " << res.singularValues()  << std::endl;
+    point_3d(0) = triangulated_point(0) / triangulated_point(3);
+    point_3d(1) = triangulated_point(1) / triangulated_point(3);
+    point_3d(2) = triangulated_point(2) / triangulated_point(3);
+
+}
+
 void triangulatePoint(const Pose& pose0_r, const Pose& pose1_r,
     /*Eigen::Matrix<double, 3, 4> &Pose0, Eigen::Matrix<double, 3, 4> &Pose1,*/
                         Eigen::Vector2d &point0, Eigen::Vector2d &point1, Eigen::Vector3d &point_3d)
@@ -27,19 +67,35 @@ void triangulatePoint(const Pose& pose0_r, const Pose& pose1_r,
     //1. compute D matrix , using projection relationship, each camera pose relate to two line.
     auto R = pose0_r.Rwc;
     auto t = pose0_r.twc;
-    Mat point0 = (Mat_<float> (3,4) <<
-        R.at<double>(0,0), R.at<double>(0,1), R.at<double>(0,2), t.at<double>(0,0),
-        R.at<double>(1,0), R.at<double>(1,1), R.at<double>(1,2), t.at<double>(1,0),
-        R.at<double>(2,0), R.at<double>(2,1), R.at<double>(2,2), t.at<double>(2,0)
-        );
+    //Mat R;
+    //Mat t;
+    //std::cout << "before conv: " << eiR ;
+    //cv::eigen2cv(eiR, R);
+    //cv::eigen2cv(eit, t);
+    Eigen::Matrix<double, 3,4> Pose0;
+    Pose0 <<
+        R(0,0), R(0,1), R(0,2), t(0,0),
+        R(1,0), R(1,1), R(1,2), t(1,0),
+        R(2,0), R(2,1), R(2,2), t(2,0);
 
+    //Eigen::Matrix<double, 3,4> Pose0;
+    //cv::cv2eigen(eiPose0, Pose0);
+    
+    //eiR = pose1_r.Rwc;
+    //eit= pose1_r.twc;
     R = pose1_r.Rwc;
     t= pose1_r.twc;
-    Mat point1 = (Mat_<float> (3,4) <<
-        R.at<double>(0,0), R.at<double>(0,1), R.at<double>(0,2), t.at<double>(0,0),
-        R.at<double>(1,0), R.at<double>(1,1), R.at<double>(1,2), t.at<double>(1,0),
-        R.at<double>(2,0), R.at<double>(2,1), R.at<double>(2,2), t.at<double>(2,0)
-    );
+    //cv::eigen2cv(eiR, R);
+    //cv::eigen2cv(eit, t);
+
+    Eigen::Matrix<double, 3,4> Pose1 ;
+    Pose1 <<
+        R(0,0), R(0,1), R(0,2), t(0,0),
+        R(1,0), R(1,1), R(1,2), t(1,0),
+        R(2,0), R(2,1), R(2,2), t(2,0);
+
+    //Eigen::Matrix<double, 3,4> Pose1;
+    //cv::cv2eigen(eiPose1, Pose1);
     //2. svd the D matrix, output singular values , find the smallest. singlar value. 
     //  using jacobiSvd
 
@@ -58,10 +114,11 @@ void triangulatePoint(const Pose& pose0_r, const Pose& pose1_r,
 }
 
 
-int main()
+int main(int argc, char** argv)
 {
 
-    int poseNums = 10;
+    google::ParseCommandLineFlags(&argc,&argv, false);
+    int poseNums = 100;
     double radius = 8;
     double fx = 1.;
     double fy = 1.;
@@ -102,9 +159,15 @@ int main()
     // 遍历所有的观测数据，并三角化
     Eigen::Vector3d P_est;           // 结果保存到这个变量
     P_est.setZero();
+
+    std::vector< Eigen::Vector2d>  image_uv_v;
+    for(auto& p: camera_pose) {
+        image_uv_v.push_back(p.uv);
+    }
     /* your code begin */
     
-    triangulatePoint( camera_pose[0], camera_pose[1], camera_pose[0].uv, camera_pose[1].uv, P_est);
+    //triangulatePoint( camera_pose[0], camera_pose[1], camera_pose[0].uv, camera_pose[1].uv, P_est);
+    multiFrameTriangulateP(camera_pose, image_uv_v, P_est, FLAGS_n_frame);
  
     /* your code end */
     
