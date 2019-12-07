@@ -249,4 +249,57 @@ now opt value is 0.240649 which is larger than that in prior_w == 100 case.
 
 
 
+#### corrected prior with camera's position prior weight to 1.
 
+```
+0 order: 0
+1 order: 6
+2 order: 12
+
+ ordered_landmark_vertices_ size : 20
+iter: 0 , chi= 5.35099 , Lambda= 0.00597396
+iter: 1 , chi= 0.0289048 , Lambda= 0.00199132
+iter: 2 , chi= 0.000109162 , Lambda= 0.000663774
+problem solve cost: 1.6688 ms
+   makeHessian cost: 0.950671 ms
+
+Compare MonoBA results after opt...
+after opt, point 0 : gt 0.220938 ,noise 0.227057 ,opt 0.220992 abs err: 5.34023e-05
+after opt, point 1 : gt 0.234336 ,noise 0.314411 ,opt 0.234854 abs err: 0.00051764
+after opt, point 2 : gt 0.142336 ,noise 0.129703 ,opt 0.142666 abs err: 0.000330376
+after opt, point 3 : gt 0.214315 ,noise 0.278486 ,opt 0.214502 abs err: 0.000187048
+after opt, point 4 : gt 0.130629 ,noise 0.130064 ,opt 0.130562 abs err: 6.70691e-05
+after opt, point 5 : gt 0.191377 ,noise 0.167501 ,opt 0.191892 abs err: 0.000515267
+after opt, point 6 : gt 0.166836 ,noise 0.165906 ,opt 0.167247 abs err: 0.000411397
+after opt, point 7 : gt 0.201627 ,noise 0.225581 ,opt 0.202172 abs err: 0.000545014
+after opt, point 8 : gt 0.167953 ,noise 0.155846 ,opt 0.168029 abs err: 7.6528e-05
+after opt, point 9 : gt 0.21891 ,noise 0.209697 ,opt 0.219314 abs err: 0.000404164
+after opt, point 10 : gt 0.205719 ,noise 0.14315 ,opt 0.205995 abs err: 0.000275672
+after opt, point 11 : gt 0.127916 ,noise 0.122109 ,opt 0.127908 abs err: 7.20633e-06
+after opt, point 12 : gt 0.167904 ,noise 0.143334 ,opt 0.168228 abs err: 0.000323225
+after opt, point 13 : gt 0.216712 ,noise 0.18526 ,opt 0.216866 abs err: 0.000154057
+after opt, point 14 : gt 0.180009 ,noise 0.184249 ,opt 0.180036 abs err: 2.74068e-05
+after opt, point 15 : gt 0.226935 ,noise 0.245716 ,opt 0.227491 abs err: 0.000555866
+after opt, point 16 : gt 0.157432 ,noise 0.176529 ,opt 0.157589 abs err: 0.000157423
+after opt, point 17 : gt 0.182452 ,noise 0.14729 ,opt 0.182444 abs err: 7.39018e-06
+after opt, point 18 : gt 0.155701 ,noise 0.182258 ,opt 0.155769 abs err: 6.82881e-05
+after opt, point 19 : gt 0.14646 ,noise 0.240649 ,opt 0.14677 abs err: 0.000310097
+Total abs error : 0.00499454
+------------ pose translation ----------------
+translation after opt: 0 :-0.000478002   0.00115905  0.000366505 || gt: 0 0 0
+translation after opt: 1 :-1.06959  4.00018 0.863877 || gt:  -1.0718        4 0.866025
+translation after opt: 2 :-4.00232  6.92678 0.867244 || gt:       -4   6.9282 0.866025
+---------- TEST Marg: before marg------------
+     100     -100        0
+    -100  136.111 -11.1111
+       0 -11.1111  11.1111
+---------- TEST Marg: 将变量移动到右下角------------
+     100        0     -100
+       0  11.1111 -11.1111
+    -100 -11.1111  136.111
+---------- TEST Marg: after marg------------
+ 26.5306 -8.16327
+-8.16327  10.2041
+
+
+```

@@ -130,9 +130,11 @@ int main(int argc, char** argv) {
     }
 
     // add first and second point's prior.
-    auto pw0 = points[0];
+    //auto pw0 = points[0];
+    auto pw0 = cameras[0].twc;
     auto camera0 = cameras[0].qwc;
-    auto pw1 = points[1];
+    //auto pw1 = points[1];
+    auto pw1 = cameras[1].twc;
     auto camera1 = cameras[1].qwc;
     //auto pc0 = cameras[0].Rwc.transpose() * (pw0 - cameras[0].twc);
     //auto pc1 = cameras[0].Rwc.transpose() * (pw1 - cameras[0].twc);
