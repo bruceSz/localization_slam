@@ -408,8 +408,8 @@ void Problem::SolveLinearSystem() {
 
         // TODO:: home work. step3: solve landmark
         VecX delta_x_ll(marg_size);
-        // hmm * delta_x_m = -bm - hpm * delta_x_pp
-        delta_x_ll = Hmm_inv * (-bmm - Hpm.transpose() * delta_x_pp);
+        // hmm * delta_x_ll = -bm - hpm * delta_x_pp
+        delta_x_ll = Hmm_inv * (bmm - Hpm.transpose() * delta_x_pp);
         delta_x_.tail(marg_size) = delta_x_ll;
 
     }
@@ -612,7 +612,7 @@ void Problem::TestMarginalize() {
     // TODO:: home work. 完成舒尔补操作
     Eigen::MatrixXd Arm = H_marg.block(0,n2,n2,m2);
     Eigen::MatrixXd Amr = H_marg.block(n2,0,m2,n2);
-    Eigen::MatrixXd Arr = H_marg.block(0,0,n2,2);
+    Eigen::MatrixXd Arr = H_marg.block(0,0,n2,n2);
 
     Eigen::MatrixXd tempB = Arm * Amm_inv;
     Eigen::MatrixXd H_prior = Arr - tempB * Amr;
