@@ -587,7 +587,7 @@ void Problem::TestMarginalize() {
     Eigen::MatrixXd temp_rows = H_marg.block(idx, 0, dim, reserve_size);
     Eigen::MatrixXd temp_botRows = H_marg.block(idx + dim, 0, reserve_size - idx - dim, reserve_size);
     H_marg.block(idx,0,reserve_size-idx-dim,reserve_size) = temp_botRows;
-    H_marg.block(idx+dim,0,dim,reserve_size) = temp_rows;
+    H_marg.block(reserve_size - dim,0,dim,reserve_size) = temp_rows;
 
     // 将 col i 移动矩阵最右边
     Eigen::MatrixXd temp_cols = H_marg.block(0, idx, reserve_size, dim);
