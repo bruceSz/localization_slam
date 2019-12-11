@@ -41,8 +41,10 @@ void multiFrameTriangulateP(std::vector<Pose>& pose_v, std::vector<Eigen::Vector
     for(int i=0; i < n_frame ; ) {
         // rwc.transpose() should be from rotation from world to camera?
         // -twc should be translation from world to camera?
+        //  it turn out that if there is no rotation at all rcw = I , twc = - tcw
+        //  while if there is a rotation, we need to first do rotation on the twc then adding a minus sign to it.
         auto R  = pose_v[i].Rwc.transpose();
-        auto t  =  - pose_v[i].twc;
+        auto t  =  - R * pose_v[i].twc;
         Eigen::Matrix<double, 3,4> Pose;
         Pose <<
             R(0,0), R(0,1), R(0,2), t(0,0),
