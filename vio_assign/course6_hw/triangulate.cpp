@@ -16,6 +16,8 @@
 #include <gflags/gflags.h>
 
 DEFINE_int32(n_frame, 2, "number of key frame.");
+DEFINE_double(noise_w, 0.0, "weight of measure noise, used to control wether use noise or not.");
+DEFINE_double(noise_var, 2.0, "variance of measure noise");
 
 using namespace cv;
 
@@ -36,16 +38,21 @@ void multiFrameTriangulateP(std::vector<Pose>& pose_v, std::vector<Eigen::Vector
     assert(pose_v.size() == image_p_v.size());
     Eigen::MatrixX4d design_matrix ;
     design_matrix.resize(n_frame*2, Eigen::NoChange);
-    for(int i=0; i < n_frame ; i++) {
-        auto R  = pose_v[i].Rwc;
-        auto t  = pose_v[i].twc;
+    for(int i=0; i < n_frame ; ) {
+        // rwc.transpose() should be from rotation from world to camera?
+        // -twc should be translation from world to camera?
+        auto R  = pose_v[i].Rwc.transpose();
+        auto t  = - pose_v[i].twc;
         Eigen::Matrix<double, 3,4> Pose;
         Pose <<
             R(0,0), R(0,1), R(0,2), t(0,0),
             R(1,0), R(1,1), R(1,2), t(1,0),
             R(2,0), R(2,1), R(2,2), t(2,0);
+            // D(i*2) = ui * pose(2) - pose(0)
+            // D(i*2+1) = vi * pose(2) - pose(1)
         design_matrix.row(i*2) = image_p_v[i][0] * Pose.row(2) - Pose.row(0);
         design_matrix.row(1*2+1) = image_p_v[i][1] * Pose.row(2) - Pose.row(1);
+        i++;
     }
 
     Eigen::Vector4d triangulated_point;
@@ -54,6 +61,10 @@ void multiFrameTriangulateP(std::vector<Pose>& pose_v, std::vector<Eigen::Vector
               res.matrixV().rightCols<1>();
 
     std::cout<< "Singular values: \n " << res.singularValues()  << std::endl;
+    std::cout << "ratio of smallest singular value and second smallest singular value : "
+            << res.singularValues()(3) / res.singularValues()(2)
+             << std::endl;
+
     point_3d(0) = triangulated_point(0) / triangulated_point(3);
     point_3d(1) = triangulated_point(1) / triangulated_point(3);
     point_3d(2) = triangulated_point(2) / triangulated_point(3);
@@ -136,23 +147,36 @@ int main(int argc, char** argv)
     std::default_random_engine generator;
     std::uniform_real_distribution<double> xy_rand(-4, 4.0);
     std::uniform_real_distribution<double> z_rand(8., 10.);
+
+    std::normal_distribution<double> noise_normal(0.0, FLAGS_noise_var);
     double tx = xy_rand(generator);
     double ty = xy_rand(generator);
     double tz = z_rand(generator);
 
     Eigen::Vector3d Pw(tx, ty, tz);
+    
+    std::vector<Pose> camera_pose_ft;
     // 这个特征从第三帧相机开始被观测，i=3
     int start_frame_id = 3;
     int end_frame_id = poseNums;
     for (int i = start_frame_id; i < end_frame_id; ++i) {
         Eigen::Matrix3d Rcw = camera_pose[i].Rwc.transpose();
-        Eigen::Vector3d Pc = Rcw * (Pw - camera_pose[i].twc);
+        // add some noise to the pw
+        auto noise = noise_normal(generator);
+        std::cout << "Adding noise : " << noise << std::endl;
+        Eigen::Vector3d noise_v;
+        noise_v << noise , noise , noise ;
+        auto Pw_noise  = FLAGS_noise_w * noise_v  +  Pw;
+        //std::cout << " old pw: \n" << Pw
+        //    << " after added noise: \n" << Pw_noise << std::endl;
+        Eigen::Vector3d Pc = Rcw * (Pw_noise - camera_pose[i].twc);
 
         double x = Pc.x();
         double y = Pc.y();
         double z = Pc.z();
 
         camera_pose[i].uv = Eigen::Vector2d(x/z,y/z);
+        camera_pose_ft.push_back(camera_pose[i]);
     }
     
     /// TODO::homework; 请完成三角化估计深度的代码
@@ -161,13 +185,13 @@ int main(int argc, char** argv)
     P_est.setZero();
 
     std::vector< Eigen::Vector2d>  image_uv_v;
-    for(auto& p: camera_pose) {
+    for(auto& p: camera_pose_ft) {
         image_uv_v.push_back(p.uv);
     }
     /* your code begin */
     
-    //triangulatePoint( camera_pose[0], camera_pose[1], camera_pose[0].uv, camera_pose[1].uv, P_est);
-    multiFrameTriangulateP(camera_pose, image_uv_v, P_est, FLAGS_n_frame);
+    //triangulatePoint( camera_pose_ft[0], camera_pose_ft[1], camera_pose_ft[0].uv, camera_pose_ft[1].uv, P_est);
+    multiFrameTriangulateP(camera_pose_ft, image_uv_v, P_est, FLAGS_n_frame);
  
     /* your code end */
     
