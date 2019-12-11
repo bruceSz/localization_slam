@@ -42,7 +42,7 @@ void multiFrameTriangulateP(std::vector<Pose>& pose_v, std::vector<Eigen::Vector
         // rwc.transpose() should be from rotation from world to camera?
         // -twc should be translation from world to camera?
         auto R  = pose_v[i].Rwc.transpose();
-        auto t  = - pose_v[i].twc;
+        auto t  =  - pose_v[i].twc;
         Eigen::Matrix<double, 3,4> Pose;
         Pose <<
             R(0,0), R(0,1), R(0,2), t(0,0),
@@ -51,7 +51,7 @@ void multiFrameTriangulateP(std::vector<Pose>& pose_v, std::vector<Eigen::Vector
             // D(i*2) = ui * pose(2) - pose(0)
             // D(i*2+1) = vi * pose(2) - pose(1)
         design_matrix.row(i*2) = image_p_v[i][0] * Pose.row(2) - Pose.row(0);
-        design_matrix.row(1*2+1) = image_p_v[i][1] * Pose.row(2) - Pose.row(1);
+        design_matrix.row(i*2+1) = image_p_v[i][1] * Pose.row(2) - Pose.row(1);
         i++;
     }
 
@@ -163,7 +163,7 @@ int main(int argc, char** argv)
         Eigen::Matrix3d Rcw = camera_pose[i].Rwc.transpose();
         // add some noise to the pw
         auto noise = noise_normal(generator);
-        std::cout << "Adding noise : " << noise << std::endl;
+        //std::cout << "Adding noise : " << FLAGS_noise_w * noise << std::endl;
         Eigen::Vector3d noise_v;
         noise_v << noise , noise , noise ;
         auto Pw_noise  = FLAGS_noise_w * noise_v  +  Pw;
