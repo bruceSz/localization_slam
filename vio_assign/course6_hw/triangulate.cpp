@@ -7,7 +7,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <Eigen/Eigenvalues>
-
+#include <iomanip>  
 
 #include <opencv2/core.hpp>
 #include <opencv2/core/eigen.hpp>
@@ -64,7 +64,7 @@ void multiFrameTriangulateP(std::vector<Pose>& pose_v, std::vector<Eigen::Vector
 
     std::cout<< "Singular values: \n " << res.singularValues()  << std::endl;
     std::cout << "ratio of smallest singular value and second smallest singular value : "
-            << res.singularValues()(3) / res.singularValues()(2)
+            << std::setprecision(20) << res.singularValues()(3) / res.singularValues()(2)
              << std::endl;
 
     point_3d(0) = triangulated_point(0) / triangulated_point(3);
