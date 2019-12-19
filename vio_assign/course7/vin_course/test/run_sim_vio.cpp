@@ -28,7 +28,7 @@ std::shared_ptr<sim::System> pSystem;
 
 void PubImuData()
 {
-	string sImu_data_file = sConfig_path + "MH_05_imu0.txt";
+	string sImu_data_file = sData_path + "imu_pose.txt";
 	cout << "1 PubImuData start sImu_data_filea: " << sImu_data_file << endl;
 	ifstream fsImu;
 	fsImu.open(sImu_data_file.c_str());
@@ -42,6 +42,7 @@ void PubImuData()
 	double dStampNSec = 0.0;
 	Vector3d vAcc;
 	Vector3d vGyr;
+	cout << "begin to getline for imu_pose." << std::endl;
 	while (std::getline(fsImu, sImu_line) && !sImu_line.empty()) // read imu data
 	{
 		std::istringstream ssImuData(sImu_line);
@@ -106,7 +107,7 @@ void PubImageData()
 {
 	// sim data has no image , just some feature points.
 	// rewrite this.
-	string sKeyFrame = sConfig_path + "keyframe/";
+	string sKeyFrame = sData_path + "keyframe/";
 
 	cout << "1 PubImageData start keyframe dir: " << sKeyFrame << endl;
 
