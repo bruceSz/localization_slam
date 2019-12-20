@@ -30,6 +30,7 @@ struct IMU_MSG
 typedef std::shared_ptr<IMU_MSG const> ImuConstPtr;
 
 struct SIM_PTS_INFO {
+    double ts;
     Eigen::Vector4d point;
     Eigen::Vector2d ft;
 
@@ -47,6 +48,13 @@ struct IMG_MSG {
 };
 typedef std::shared_ptr <IMG_MSG const > ImgConstPtr;
     
+#define EPSILON 0.000001
+
+bool CompareDoubles2 (double A, double B) 
+{
+   auto diff = A - B;
+   return (diff < EPSILON) && (-diff < EPSILON);
+}
 class System
 {
 public:

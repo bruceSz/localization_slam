@@ -35,6 +35,7 @@ void PubImuData()
 	if (!fsImu.is_open())
 	{
 		cerr << "Failed to open imu file! " << sImu_data_file << endl;
+		exit(1);
 		return;
 	}
 
@@ -43,6 +44,7 @@ void PubImuData()
 	Vector3d vAcc;
 	Vector3d vGyr;
 	cout << "begin to getline for imu_pose." << std::endl;
+	int num = 0;
 	while (std::getline(fsImu, sImu_line) && !sImu_line.empty()) // read imu data
 	{
 		std::istringstream ssImuData(sImu_line);
@@ -67,8 +69,15 @@ void PubImuData()
 		ssImuData >> dStampNSec  >> qw >> qx >> qy >> qz >> tx >> ty >> tz
 		>> vGyr.x() >> vGyr.y() >> vGyr.z() >> vAcc.x() >> vAcc.y() >> vAcc.z();
 		// cout << "Imu t: " << fixed << dStampNSec << " gyr: " << vGyr.transpose() << " acc: " << vAcc.transpose() << endl;
-		pSystem->PubImuData(dStampNSec / 1e9, vGyr, vAcc);
+
+		pSystem->PubImuData(dStampNSec , vGyr, vAcc);
 		usleep(5000*nDelayTimes);
+		num++;
+		cout << "imu with ts " << dStampNSec << " published ." << std::endl;
+
+		if (num %100 == 0) {
+			cout << "num 100 imu measurement." << std::endl;
+		}
 	}
 	fsImu.close();
 }
@@ -92,9 +101,11 @@ bool get_points_info(std::string prefix, int num, vector<sim::SIM_PTS_INFO>& fts
 		sim::SIM_PTS_INFO pts_info;
 		Eigen::Vector4d p;
 		Eigen::Vector2d ft;
-		ssPointData >> p(0) >> p(1) >> p(2) >> p(3) >> ft(0) >> ft(1);
+		double ts;
+		ssPointData >> ts >>  p(0) >> p(1) >> p(2) >> p(3) >> ft(0) >> ft(1);
 		pts_info.ft = ft;
 		pts_info.point = p;
+		pts_info.ts = ts;
 		
 		fts.push_back(pts_info);
 	}
@@ -121,10 +132,11 @@ void PubImageData()
 		if (!get_points_info(sKeyFrame,n, fts))  {
 			continue;
 		}
+		cout << "all " << fts.size() << " fts for camera at ts: " << t << std::endl;
 		pSystem->PubImageFts(t, fts);
 	    t += 1.0/params.cam_frequency;
 		n++;
-		usleep(50000*nDelayTimes);
+		usleep(5000*nDelayTimes);
 	}
 }
 

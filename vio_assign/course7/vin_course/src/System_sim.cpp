@@ -92,8 +92,14 @@ void System::PubImageFts(double dStampSec, vector<SIM_PTS_INFO>& fts) {
         {
             for(unsigned int i=0;i<fts.size(); i++) {
                 auto ft = fts[i];
+                if(! CompareDoubles2(ft.ts, dStampSec) ) {
+                    cerr  << std::setprecision(10)<< " ft ts is : " << ft.ts << " camera total ts: " << dStampSec << std::endl;
+                }
                 int id_of_point = i;
-                feature_points->points.push_back(Vector3d(ft.point.x(), ft.point.y(), ft.point.z()));
+                // the points here should be vector of image plane coordinates.
+                //feature_points->points.push_back(Vector3d(ft.point.x(), ft.point.y(), ft.point.z()));
+                // TODO , change this point from world frame coordinate to image plane coordinate.
+                feature_points->points.push_back(Vector3d(ft.point.x(), ft.point.y(), 1));
                 feature_points->id_of_point.push_back(id_of_point);
                 feature_points->u_of_point.push_back(ft.ft(0));
                 feature_points->v_of_point.push_back(ft.ft(1));
@@ -134,6 +140,7 @@ void System::PubImageFts(double dStampSec, vector<SIM_PTS_INFO>& fts) {
             else
             {
                 m_buf.lock();
+                cout << "publish image fts for camera @ts: " << feature_points->header << std::endl;
                 feature_buf.push(feature_points);
                 // cout << "5 PubImage t : " << fixed << feature_points->header
                 //     << " feature_buf size: " << feature_buf.size() << endl;
@@ -240,6 +247,7 @@ void System::PubImageData(double dStampSec, Mat &img)
             else
             {
                 m_buf.lock();
+                
                 feature_buf.push(feature_points);
                 // cout << "5 PubImage t : " << fixed << feature_points->header
                 //     << " feature_buf size: " << feature_buf.size() << endl;
@@ -284,7 +292,11 @@ vector<pair<vector<ImuConstPtr>, ImgConstPtr>> System::getMeasurements()
         if (!(imu_buf.back()->header > feature_buf.front()->header + estimator.td))
         {
             cerr << "wait for imu, only should happen at the beginning sum_of_wait: " 
-                << sum_of_wait << endl;
+                << sum_of_wait 
+                << " feature_buf.front()  ts: " << feature_buf.front()->header << " td of estimator: " << estimator.td
+                 << " measurements size: " << measurements.size() 
+                 << "imu_buf back() ts: " << imu_buf.back()->header
+                << endl;
             sum_of_wait++;
             return measurements;
         }
@@ -313,8 +325,10 @@ vector<pair<vector<ImuConstPtr>, ImgConstPtr>> System::getMeasurements()
         //     << " imu begin: "<< IMUs.front()->header 
         //     << " end: " << IMUs.back()->header
         //     << endl;
+        cout << "has some measurements  with current size of measurements: " << measurements.size() << std::endl;
         measurements.emplace_back(IMUs, img_msg);
     }
+    cout << "final measurements size: " << measurements.size() << std::endl;
     return measurements;
 }
 
