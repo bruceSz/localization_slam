@@ -178,7 +178,7 @@ vector<pair<vector<ImuConstPtr>, ImgConstPtr>> System::getMeasurements()
     {
         if (imu_buf.empty() || feature_buf.empty())
         {
-            // cerr << "1 imu_buf.empty() || feature_buf.empty()" << endl;
+            cerr << "1 imu_buf.empty() || feature_buf.empty()" << endl;
             return measurements;
         }
 
@@ -214,6 +214,7 @@ vector<pair<vector<ImuConstPtr>, ImgConstPtr>> System::getMeasurements()
         //     << " imu begin: "<< IMUs.front()->header 
         //     << " end: " << IMUs.back()->header
         //     << endl;
+        std::cout << "there are " << measurements.size() << " measurements now." << std::endl;
         measurements.emplace_back(IMUs, img_msg);
     }
     return measurements;

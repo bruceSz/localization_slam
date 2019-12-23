@@ -1,5 +1,7 @@
 #include "estimator.h"
 
+#include <thread>
+
 #include "backend/vertex_inverse_depth.h"
 #include "backend/vertex_pose.h"
 #include "backend/vertex_speedbias.h"
@@ -160,7 +162,7 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
 
     if (ESTIMATE_EXTRINSIC == 2)
     {
-        cout << "calibrating extrinsic param, rotation movement is needed" << endl;
+        cout << std::this_thread::get_id() << " calibrating extrinsic param, rotation movement is needed" << endl;
         if (frame_count != 0)
         {
             vector<pair<Vector3d, Vector3d>> corres = f_manager.getCorresponding(frame_count - 1, frame_count);
@@ -177,6 +179,7 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
         }
     }
 
+    cout << "solver_flag: " << solver_flag << std::endl;
     if (solver_flag == INITIAL)
     {
         if (frame_count == WINDOW_SIZE)
@@ -184,7 +187,8 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
             bool result = false;
             if (ESTIMATE_EXTRINSIC != 2 && (header - initial_timestamp) > 0.1)
             {
-                // cout << "1 initialStructure" << endl;
+                cout << std::this_thread::get_id() << " init structure. " << std::endl;
+                cout << "1 initialStructure" << endl;
                 result = initialStructure();
                 initial_timestamp = header;
             }
@@ -462,6 +466,7 @@ bool Estimator::visualInitialAlign()
 bool Estimator::relativePose(Matrix3d &relative_R, Vector3d &relative_T, int &l)
 {
     // find previous frame which contians enough correspondance and parallex with newest frame
+    cout << "window size: "  << WINDOW_SIZE << std::endl;
     for (int i = 0; i < WINDOW_SIZE; i++)
     {
         vector<pair<Vector3d, Vector3d>> corres;
@@ -477,13 +482,18 @@ bool Estimator::relativePose(Matrix3d &relative_R, Vector3d &relative_T, int &l)
                 double parallax = (pts_0 - pts_1).norm();
                 sum_parallax = sum_parallax + parallax;
             }
+            // 
+            
             average_parallax = 1.0 * sum_parallax / int(corres.size());
+            cout << "avg parallax: " << average_parallax << std::endl;
             if (average_parallax * 460 > 30 && m_estimator.solveRelativeRT(corres, relative_R, relative_T))
             {
                 l = i;
                 //ROS_DEBUG("average_parallax %f choose l %d and newest frame to triangulate the whole structure", average_parallax * 460, l);
                 return true;
             }
+        } else {
+            cerr << "there are less than 20 corres points: " << std::endl;
         }
     }
     return false;

@@ -16,7 +16,7 @@
 void save_points(std::string filename, std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d> > points);
 
 // save 3d points and it's obs in image
-void save_features(std::string filename,
+void save_features(std::string filename, double ts,
                    std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d> > points,
                    std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > features);
 

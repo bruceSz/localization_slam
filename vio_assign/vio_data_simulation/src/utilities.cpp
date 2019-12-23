@@ -2,7 +2,7 @@
 // Created by hyj on 18-1-19.
 //
 #include "utilities.h"
-
+#include <iomanip>
 
 void save_points(std::string filename, std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d> > points)
 {
@@ -18,7 +18,7 @@ void save_points(std::string filename, std::vector<Eigen::Vector4d, Eigen::align
                    <<p(3)<<std::endl;
     }
 }
-void save_features(std::string filename,
+void save_features(std::string filename, double ts,
                    std::vector<Eigen::Vector4d, Eigen::aligned_allocator<Eigen::Vector4d> > points,
                    std::vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d> > features)
 {
@@ -28,7 +28,8 @@ void save_features(std::string filename,
     for (int i = 0; i < points.size(); ++i) {
         Eigen::Vector4d p = points[i];
         Eigen::Vector2d f = features[i];
-        save_points<<p(0)<<" "
+        save_points  << std::setprecision(7)<< ts << " "
+                    <<p(0)<<" "
                    <<p(1)<<" "
                    <<p(2)<<" "
                    <<p(3)<<" "

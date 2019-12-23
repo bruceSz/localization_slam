@@ -136,7 +136,7 @@ void PubImageData()
 		pSystem->PubImageFts(t, fts);
 	    t += 1.0/params.cam_frequency;
 		n++;
-		usleep(5000*nDelayTimes);
+		usleep(50000*nDelayTimes);
 	}
 }
 

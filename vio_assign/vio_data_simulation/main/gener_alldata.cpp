@@ -180,7 +180,7 @@ int main(){
         // save points
         std::stringstream filename1;
         filename1<<"keyframe/all_points_"<<n<<".txt";
-        save_features(filename1.str(),points_cam,features_cam);
+        save_features(filename1.str(),data.timestamp,points_cam,features_cam);
     }
 
     // lines obs in image

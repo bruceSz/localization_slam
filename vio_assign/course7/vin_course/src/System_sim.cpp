@@ -18,7 +18,7 @@ System::System(string sConfig_file_)
 {
     string sConfig_file = sConfig_file_ + "euroc_config.yaml";
 
-    cout << "1 System() sConfig_file: " << sConfig_file << endl;
+    cout << std::this_thread::get_id() << std::this_thread::get_id() << "1 System() sConfig_file: " << sConfig_file << endl;
     readParameters(sConfig_file);
 
     trackerData[0].readIntrinsicParameter(sConfig_file);
@@ -31,7 +31,7 @@ System::System(string sConfig_file_)
     }
     // thread thd_RunBackend(&System::process,this);
     // thd_RunBackend.detach();
-    cout << "2 System() end" << endl;
+    cout << std::this_thread::get_id() << std::this_thread::get_id() << "2 System() end" << endl;
 }
 
 System::~System()
@@ -59,7 +59,7 @@ void System::PubImageFts(double dStampSec, vector<SIM_PTS_INFO>& fts) {
     //2. sim data should be stable and continuous.
     if (first_image_flag)
     {
-        cout << "2 PubImageData first_image_flag" << endl;
+        cout << std::this_thread::get_id() << std::this_thread::get_id() << "2 PubImageData first_image_flag" << endl;
         first_image_flag = false;
         first_image_time = dStampSec;
         last_image_time = dStampSec;
@@ -134,15 +134,15 @@ void System::PubImageFts(double dStampSec, vector<SIM_PTS_INFO>& fts) {
             // skip the first image; since no optical speed on frist image
             if (!init_pub)
             {
-                cout << "4 PubImage init_pub skip the first image!" << endl;
+                cout << std::this_thread::get_id() << std::this_thread::get_id() << "4 PubImage init_pub skip the first image!" << endl;
                 init_pub = 1;
             }
             else
             {
                 m_buf.lock();
-                cout << "publish image fts for camera @ts: " << feature_points->header << std::endl;
+                cout << std::this_thread::get_id() << std::this_thread::get_id() << "publish image fts for camera @ts: " << feature_points->header << std::endl;
                 feature_buf.push(feature_points);
-                // cout << "5 PubImage t : " << fixed << feature_points->header
+                // cout << std::this_thread::get_id() << std::this_thread::get_id() << "5 PubImage t : " << fixed << feature_points->header
                 //     << " feature_buf size: " << feature_buf.size() << endl;
                 m_buf.unlock();
                 con.notify_one();
@@ -157,14 +157,14 @@ void System::PubImageData(double dStampSec, Mat &img)
 {
     if (!init_feature)
     {
-        cout << "1 PubImageData skip the first detected feature, which doesn't contain optical flow speed" << endl;
+        cout << std::this_thread::get_id() << std::this_thread::get_id() << "1 PubImageData skip the first detected feature, which doesn't contain optical flow speed" << endl;
         init_feature = 1;
         return;
     }
 
     if (first_image_flag)
     {
-        cout << "2 PubImageData first_image_flag" << endl;
+        cout << std::this_thread::get_id() << "2 PubImageData first_image_flag" << endl;
         first_image_flag = false;
         first_image_time = dStampSec;
         last_image_time = dStampSec;
@@ -197,7 +197,7 @@ void System::PubImageData(double dStampSec, Mat &img)
     }
 
     TicToc t_r;
-    // cout << "3 PubImageData t : " << dStampSec << endl;
+    // cout << std::this_thread::get_id() << "3 PubImageData t : " << dStampSec << endl;
     trackerData[0].readImage(img, dStampSec);
 
     for (unsigned int i = 0;; i++)
@@ -241,7 +241,7 @@ void System::PubImageData(double dStampSec, Mat &img)
             // skip the first image; since no optical speed on frist image
             if (!init_pub)
             {
-                cout << "4 PubImage init_pub skip the first image!" << endl;
+                cout << std::this_thread::get_id() << "4 PubImage init_pub skip the first image!" << endl;
                 init_pub = 1;
             }
             else
@@ -249,7 +249,7 @@ void System::PubImageData(double dStampSec, Mat &img)
                 m_buf.lock();
                 
                 feature_buf.push(feature_points);
-                // cout << "5 PubImage t : " << fixed << feature_points->header
+                // cout << std::this_thread::get_id() << "5 PubImage t : " << fixed << feature_points->header
                 //     << " feature_buf size: " << feature_buf.size() << endl;
                 m_buf.unlock();
                 con.notify_one();
@@ -273,7 +273,7 @@ void System::PubImageData(double dStampSec, Mat &img)
         cv::waitKey(1);
 	}
 #endif    
-    // cout << "5 PubImage" << endl;
+    // cout << std::this_thread::get_id() << "5 PubImage" << endl;
     
 }
 
@@ -285,10 +285,10 @@ vector<pair<vector<ImuConstPtr>, ImgConstPtr>> System::getMeasurements()
     {
         if (imu_buf.empty() || feature_buf.empty())
         {
-            // cerr << "1 imu_buf.empty() || feature_buf.empty()" << endl;
+            cerr << std::this_thread::get_id() << "1 imu_buf.empty() || feature_buf.empty()" << endl;
             return measurements;
         }
-
+        // if newest imu is older than that of oldest feature ts.
         if (!(imu_buf.back()->header > feature_buf.front()->header + estimator.td))
         {
             cerr << "wait for imu, only should happen at the beginning sum_of_wait: " 
@@ -313,22 +313,29 @@ vector<pair<vector<ImuConstPtr>, ImgConstPtr>> System::getMeasurements()
         vector<ImuConstPtr> IMUs;
         while (imu_buf.front()->header < img_msg->header + estimator.td)
         {
+            cout << std::this_thread::get_id() << "imu_buf ts less than img ts , add to buf imus for backend int."  
+                << "imu buf ts: " << imu_buf.front()->header 
+                << "img_msg header ts: " << img_msg->header 
+                << "estimator.id is: " << estimator.td
+                << std::endl;
             IMUs.emplace_back(imu_buf.front());
             imu_buf.pop();
         }
-        // cout << "1 getMeasurements IMUs size: " << IMUs.size() << endl;
+        // cout << std::this_thread::get_id() << "1 getMeasurements IMUs size: " << IMUs.size() << endl;
         IMUs.emplace_back(imu_buf.front());
         if (IMUs.empty()){
             cerr << "no imu between two image" << endl;
         }
-        // cout << "1 getMeasurements img t: " << fixed << img_msg->header
+        // cout << std::this_thread::get_id() << "1 getMeasurements img t: " << fixed << img_msg->header
         //     << " imu begin: "<< IMUs.front()->header 
         //     << " end: " << IMUs.back()->header
         //     << endl;
-        cout << "has some measurements  with current size of measurements: " << measurements.size() << std::endl;
+        // out << "has some measurements  with current size of measurements: " << measurements.size() << std::endl;
         measurements.emplace_back(IMUs, img_msg);
+        cout << std::this_thread::get_id() << "has some measurements  with current size of measurements: " << measurements.size() << std::endl;
     }
-    cout << "final measurements size: " << measurements.size() << std::endl;
+    cout << std::this_thread::get_id() << "final measurements size: " << measurements.size() << std::endl;
+    //exit(0);
     return measurements;
 }
 
@@ -346,12 +353,12 @@ void System::PubImuData(double dStampSec, const Eigen::Vector3d &vGyr,
         return;
     }
     last_imu_t = dStampSec;
-    // cout << "1 PubImuData t: " << fixed << imu_msg->header
+    // cout << std::this_thread::get_id() << "1 PubImuData t: " << fixed << imu_msg->header
     //     << " acc: " << imu_msg->linear_acceleration.transpose()
     //     << " gyr: " << imu_msg->angular_velocity.transpose() << endl;
     m_buf.lock();
     imu_buf.push(imu_msg);
-    // cout << "1 PubImuData t: " << fixed << imu_msg->header 
+    // cout << std::this_thread::get_id() << "1 PubImuData t: " << fixed << imu_msg->header 
     //     << " imu_buf size:" << imu_buf.size() << endl;
     m_buf.unlock();
     con.notify_one();
@@ -360,10 +367,10 @@ void System::PubImuData(double dStampSec, const Eigen::Vector3d &vGyr,
 // thread: visual-inertial odometry
 void System::ProcessBackEnd()
 {
-    cout << "1 ProcessBackEnd start" << endl;
+    cout << std::this_thread::get_id() << "1 ProcessBackEnd start" << endl;
     while (bStart_backend)
     {
-        // cout << "1 process()" << endl;
+        // cout << std::this_thread::get_id() << "1 process()" << endl;
         vector<pair<vector<ImuConstPtr>, ImgConstPtr>> measurements;
         
         unique_lock<mutex> lk(m_buf);
@@ -371,7 +378,7 @@ void System::ProcessBackEnd()
             return (measurements = getMeasurements()).size() != 0;
         });
         if( measurements.size() > 1){
-        cout << "1 getMeasurements size: " << measurements.size() 
+        cout << std::this_thread::get_id() << "1 getMeasurements size: " << measurements.size() 
             << " imu sizes: " << measurements[0].first.size()
             << " feature_buf size: " <<  feature_buf.size()
             << " imu_buf size: " << imu_buf.size() << endl;
@@ -423,7 +430,7 @@ void System::ProcessBackEnd()
                 }
             }
 
-            // cout << "processing vision data with stamp:" << img_msg->header 
+            // cout << std::this_thread::get_id() << "processing vision data with stamp:" << img_msg->header 
             //     << " img_msg->points.size: "<< img_msg->points.size() << endl;
 
             // TicToc t_s;
@@ -456,7 +463,7 @@ void System::ProcessBackEnd()
                 p_wi = estimator.Ps[WINDOW_SIZE];
                 vPath_to_draw.push_back(p_wi);
                 double dStamp = estimator.Headers[WINDOW_SIZE];
-                cout << "1 BackEnd processImage dt: " << fixed << t_processImage.toc() << " stamp: " <<  dStamp << " p_wi: " << p_wi.transpose() << endl;
+                cout << std::this_thread::get_id() << "1 BackEnd processImage dt: " << fixed << t_processImage.toc() << " stamp: " <<  dStamp << " p_wi: " << p_wi.transpose() << endl;
                 ofs_pose << fixed << dStamp << " " << p_wi(0) << " " << p_wi(1) << " " << p_wi(2) << " " 
                          << q_wi.w() << " " << q_wi.x() << " " << q_wi.y() << " " << q_wi.z() << endl;
             }
