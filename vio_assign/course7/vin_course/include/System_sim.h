@@ -16,6 +16,7 @@
 #include "estimator.h"
 #include "parameters.h"
 #include "feature_tracker.h"
+#include "param.h"
 
 
 namespace sim {
@@ -55,10 +56,12 @@ bool CompareDoubles2 (double A, double B)
    auto diff = A - B;
    return (diff < EPSILON) && (-diff < EPSILON);
 }
+
+
 class System
 {
 public:
-    System(std::string sConfig_files);
+    System(std::string sConfig_files, Param* params);
 
     ~System();
 
@@ -85,6 +88,10 @@ public:
 
 private:
 
+bool spaceToPlane(const Eigen::Vector3d& P, Eigen::Vector2d& p,
+    double fx, double fy, double cx, double cy ) const ;
+
+    sim::Param* params_;
     //feature tracker
     std::vector<uchar> r_status;
     std::vector<float> r_err;

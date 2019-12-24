@@ -151,6 +151,8 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
 
     //ROS_DEBUG("this frame is--------------------%s", marginalization_flag ? "reject" : "accept");
     //ROS_DEBUG("%s", marginalization_flag ? "Non-keyframe" : "Keyframe");
+    auto korn = marginalization_flag ? "Non-keyframe" : "Keyframe";
+    cout << " should margi this frame " <<  korn << std::endl;
     //ROS_DEBUG("Solving %d", frame_count);
     // cout << "number of feature: " << f_manager.getFeatureCount()<<endl;
     Headers[frame_count] = header;
@@ -467,6 +469,7 @@ bool Estimator::relativePose(Matrix3d &relative_R, Vector3d &relative_T, int &l)
 {
     // find previous frame which contians enough correspondance and parallex with newest frame
     cout << "window size: "  << WINDOW_SIZE << std::endl;
+    
     for (int i = 0; i < WINDOW_SIZE; i++)
     {
         vector<pair<Vector3d, Vector3d>> corres;
@@ -480,12 +483,14 @@ bool Estimator::relativePose(Matrix3d &relative_R, Vector3d &relative_T, int &l)
                 Vector2d pts_0(corres[j].first(0), corres[j].first(1));
                 Vector2d pts_1(corres[j].second(0), corres[j].second(1));
                 double parallax = (pts_0 - pts_1).norm();
+
                 sum_parallax = sum_parallax + parallax;
             }
             // 
             
             average_parallax = 1.0 * sum_parallax / int(corres.size());
             cout << "avg parallax: " << average_parallax << std::endl;
+             
             if (average_parallax * 460 > 30 && m_estimator.solveRelativeRT(corres, relative_R, relative_T))
             {
                 l = i;

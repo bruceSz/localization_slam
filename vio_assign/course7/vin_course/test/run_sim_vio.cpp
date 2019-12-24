@@ -138,6 +138,7 @@ void PubImageData()
 		n++;
 		usleep(50000*nDelayTimes);
 	}
+	exit(1);
 }
 
 #ifdef __APPLE__
@@ -208,7 +209,7 @@ int main(int argc, char **argv)
 	sData_path = argv[1];
 	sConfig_path = argv[2];
 
-	pSystem.reset(new sim::System(sConfig_path));
+	pSystem.reset(new sim::System(sConfig_path, &params));
 	
 	std::thread thd_BackEnd(&sim::System::ProcessBackEnd, pSystem);
 		

@@ -13,8 +13,8 @@ using namespace pangolin;
 
 
 
-System::System(string sConfig_file_)
-    :bStart_backend(true)
+System::System(string sConfig_file_, sim::Param* params)
+    :bStart_backend(true),params_(params)
 {
     string sConfig_file = sConfig_file_ + "euroc_config.yaml";
 
@@ -53,6 +53,51 @@ System::~System()
 
     ofs_pose.close();
 }
+
+/**
+ * Copied from PinholeCamera.cc
+ * 
+ * \brief Project a 3D point (\a x,\a y,\a z) to the image plane in (\a u,\a v)
+ *
+ * \param P 3D point coordinates
+ * \param p return value, contains the image point coordinates
+ */
+bool
+System::spaceToPlane(const Eigen::Vector3d& P, Eigen::Vector2d& p,
+    double fx, double fy, double cx, double cy ) const
+{
+    Eigen::Vector2d p_u, p_d;
+
+    double denorm = P(2);
+    if (P(2) == 0.0) {
+        denorm  = EPSILON * 100;
+    }
+    // Project points to the normalised plane
+    p_u << P(0) / denorm, P(1) / denorm;
+    if (std::isnan(p_u(0))) {
+        std::cerr << "p: " << P << std::endl;
+        return false;
+    }
+    p_d = p_u;
+    //  do not consider distortion here.
+    /*if (m_noDistortion)
+    {
+        p_d = p_u;
+    }
+    else
+    {
+        // Apply distortion
+        Eigen::Vector2d d_u;
+        distortion(p_u, d_u);
+        p_d = p_u + d_u;
+    }*/
+
+    // Apply generalised projection matrix
+    p << fx * p_d(0) + cx,
+         fy * p_d(1) + cy;
+}
+
+
 
 void System::PubImageFts(double dStampSec, vector<SIM_PTS_INFO>& fts) {
     //1. pure fts , no need for optical flow computation.
@@ -97,12 +142,20 @@ void System::PubImageFts(double dStampSec, vector<SIM_PTS_INFO>& fts) {
                 }
                 int id_of_point = i;
                 // the points here should be vector of image plane coordinates.
-                //feature_points->points.push_back(Vector3d(ft.point.x(), ft.point.y(), ft.point.z()));
                 // TODO , change this point from world frame coordinate to image plane coordinate.
-                feature_points->points.push_back(Vector3d(ft.point.x(), ft.point.y(), 1));
+                //  space to image plane.
+                Eigen::Vector3d pw(ft.point.x(), ft.point.y(), ft.point.z());
+                Eigen::Vector2d image_coor ;
+                auto res = spaceToPlane(pw, image_coor, params_->fx, params_->fy, params_->cx, params_->cy);
+                if (!res) {
+                    std::cerr << "image coor is has zero depth, ignore it " << std::endl;
+                    //continue;
+                }
+                feature_points->points.push_back(Vector3d(ft.ft(0), ft.ft(1), 1));
+                //feature_points->points.push_back(Vector3d(ft.point.x(), ft.point.y(), ft.point.z()));
                 feature_points->id_of_point.push_back(id_of_point);
-                feature_points->u_of_point.push_back(ft.ft(0));
-                feature_points->v_of_point.push_back(ft.ft(1));
+                feature_points->u_of_point.push_back(image_coor(0));
+                feature_points->v_of_point.push_back(image_coor(1));
                 // ignore the velocity in pixel frame.(vx,vy)
                 feature_points->velocity_x_of_point.push_back(0);
                 feature_points->velocity_y_of_point.push_back(0);
@@ -142,6 +195,14 @@ void System::PubImageFts(double dStampSec, vector<SIM_PTS_INFO>& fts) {
                 m_buf.lock();
                 cout << std::this_thread::get_id() << std::this_thread::get_id() << "publish image fts for camera @ts: " << feature_points->header << std::endl;
                 feature_buf.push(feature_points);
+                cout << "feature points pushed: " << std::endl;
+                for(int i=0;i<feature_points->points.size();i++) {
+                    cout << "point xyz: " << feature_points->points[i].x() << ";" <<  feature_points->points[i].y() << ";"
+                         << feature_points->points[i].z() << std::endl;
+                }
+
+                cout << std::endl;
+                
                 // cout << std::this_thread::get_id() << std::this_thread::get_id() << "5 PubImage t : " << fixed << feature_points->header
                 //     << " feature_buf size: " << feature_buf.size() << endl;
                 m_buf.unlock();
@@ -313,11 +374,11 @@ vector<pair<vector<ImuConstPtr>, ImgConstPtr>> System::getMeasurements()
         vector<ImuConstPtr> IMUs;
         while (imu_buf.front()->header < img_msg->header + estimator.td)
         {
-            cout << std::this_thread::get_id() << "imu_buf ts less than img ts , add to buf imus for backend int."  
-                << "imu buf ts: " << imu_buf.front()->header 
-                << "img_msg header ts: " << img_msg->header 
-                << "estimator.id is: " << estimator.td
-                << std::endl;
+            //cout << std::this_thread::get_id() << "imu_buf ts less than img ts , add to buf imus for backend int."  
+            //    << "imu buf ts: " << imu_buf.front()->header 
+            //    << "img_msg header ts: " << img_msg->header 
+            //    << "estimator.id is: " << estimator.td
+            //    << std::endl;
             IMUs.emplace_back(imu_buf.front());
             imu_buf.pop();
         }
