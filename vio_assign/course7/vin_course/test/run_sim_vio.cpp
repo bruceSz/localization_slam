@@ -71,7 +71,8 @@ void PubImuData()
 		// cout << "Imu t: " << fixed << dStampNSec << " gyr: " << vGyr.transpose() << " acc: " << vAcc.transpose() << endl;
 
 		pSystem->PubImuData(dStampNSec , vGyr, vAcc);
-		usleep(5000*nDelayTimes);
+		auto milli = 1000/params.imu_frequency ;
+		usleep(milli*1000*nDelayTimes);
 		num++;
 		cout << "imu with ts " << dStampNSec << " published ." << std::endl;
 
@@ -127,6 +128,7 @@ void PubImageData()
 	// t also the camera timestamp.
 	// n is the index of of this timestamp;
 	int n = 0;
+	int milli =  1000/params.cam_frequency;
 	for (float t = params.t_start; t<params.t_end;) {
 		std::vector<sim::SIM_PTS_INFO> fts;
 		if (!get_points_info(sKeyFrame,n, fts))  {
@@ -136,7 +138,8 @@ void PubImageData()
 		pSystem->PubImageFts(t, fts);
 	    t += 1.0/params.cam_frequency;
 		n++;
-		usleep(50000*nDelayTimes);
+
+		usleep(milli * 1000*nDelayTimes);
 	}
 	exit(1);
 }

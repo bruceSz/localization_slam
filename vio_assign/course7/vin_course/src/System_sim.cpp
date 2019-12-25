@@ -151,6 +151,7 @@ void System::PubImageFts(double dStampSec, vector<SIM_PTS_INFO>& fts) {
                     std::cerr << "image coor is has zero depth, ignore it " << std::endl;
                     //continue;
                 }
+                // points here is normalized plane (x,y,1)
                 feature_points->points.push_back(Vector3d(ft.ft(0), ft.ft(1), 1));
                 //feature_points->points.push_back(Vector3d(ft.point.x(), ft.point.y(), ft.point.z()));
                 feature_points->id_of_point.push_back(id_of_point);
@@ -592,7 +593,8 @@ void System::Draw()
             }
             glEnd();
         }
-        pangolin::FinishFrame();
+        if (!pangolin::ShouldQuit())
+            pangolin::FinishFrame();
         usleep(5000);   // sleep 5 ms
     }
 }

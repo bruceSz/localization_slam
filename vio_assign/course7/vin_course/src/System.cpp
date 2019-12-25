@@ -120,6 +120,7 @@ void System::PubImageData(double dStampSec, Mat &img)
                 {
                     int p_id = ids[j];
                     hash_ids[i].insert(p_id);
+                    // the un_pts is normalized plane.
                     double x = un_pts[j].x;
                     double y = un_pts[j].y;
                     double z = 1;
