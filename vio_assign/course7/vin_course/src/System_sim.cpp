@@ -16,7 +16,7 @@ using namespace pangolin;
 System::System(string sConfig_file_, sim::Param* params)
     :bStart_backend(true),params_(params)
 {
-    string sConfig_file = sConfig_file_ + "euroc_config.yaml";
+    string sConfig_file = sConfig_file_ + "vio_sim_config.yaml";
 
     cout << std::this_thread::get_id() << std::this_thread::get_id() << "1 System() sConfig_file: " << sConfig_file << endl;
     readParameters(sConfig_file);
@@ -135,12 +135,14 @@ void System::PubImageFts(double dStampSec, vector<SIM_PTS_INFO>& fts) {
         vector<set<int>> hash_ids(NUM_OF_CAM);
         for (int i = 0; i < NUM_OF_CAM; i++)
         {
-            for(unsigned int i=0;i<fts.size(); i++) {
-                auto ft = fts[i];
+            for(unsigned int j=0; j < fts.size(); j++) {
+                auto ft = fts[j];
                 if(! CompareDoubles2(ft.ts, dStampSec) ) {
                     cerr  << std::setprecision(10)<< " ft ts is : " << ft.ts << " camera total ts: " << dStampSec << std::endl;
                 }
-                int id_of_point = i;
+                // id of the point?
+                // try and test with different j (maybe generated from point id)
+                int id_of_point = j;
                 // the points here should be vector of image plane coordinates.
                 // TODO , change this point from world frame coordinate to image plane coordinate.
                 //  space to image plane.
@@ -575,6 +577,14 @@ void System::Draw()
         int nPath_size = vPath_to_draw.size();
         for(int i = 0; i < nPath_size-1; ++i)
         {        
+            cout << "xyz of vpath: " << vPath_to_draw[i].x() << 
+                vPath_to_draw[i].y() <<
+                vPath_to_draw[i].z() <<
+                " i+1: " << 
+                vPath_to_draw[i+1].x() <<
+                vPath_to_draw[i+1].y() <<
+                vPath_to_draw[i+1].z() << std::endl;
+
             glVertex3f(vPath_to_draw[i].x(), vPath_to_draw[i].y(), vPath_to_draw[i].z());
             glVertex3f(vPath_to_draw[i+1].x(), vPath_to_draw[i+1].y(), vPath_to_draw[i+1].z());
         }
@@ -585,16 +595,21 @@ void System::Draw()
         {
             glPointSize(5);
             glBegin(GL_POINTS);
-            for(int i = 0; i < WINDOW_SIZE+1;++i)
+            for(int i = 0; i < WINDOW_SIZE;++i)
             {
                 Vector3d p_wi = estimator.Ps[i];
                 glColor3f(1, 0, 0);
+                cout << "pwi: " << p_wi << std::endl;
                 glVertex3d(p_wi[0],p_wi[1],p_wi[2]);
             }
             glEnd();
         }
         if (!pangolin::ShouldQuit())
+        {
+            
             pangolin::FinishFrame();
+        }
+            
         usleep(5000);   // sleep 5 ms
     }
 }
