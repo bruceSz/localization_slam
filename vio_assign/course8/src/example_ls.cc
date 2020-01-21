@@ -195,6 +195,9 @@ void LevelM(const VectorXd& input, const VectorXd& output, VectorXd& params) {
 }
 
 
+
+// reference: https://blog.csdn.net/stihy/article/details/52737723
+
 void dogleg(const VectorXd& input, const VectorXd& output, VectorXd& params) {
     cerr << "dogleg begin. " << std::endl;
     int errN = input.rows();
@@ -271,6 +274,7 @@ void dogleg(const VectorXd& input, const VectorXd& output, VectorXd& params) {
             deltaL  = sqerror(obj);
         } else if (alpha * stepest_desc.norm() >= radius) {
             deltaL = radius*(2* alpha * grad.norm() - radius) / (2.0* alpha);
+            //deltaL = (radius / stepest_desc.norm())* stepest_desc;
         } else {
             VectorXd a = alpha * stepest_desc;
             VectorXd b = gauss_newton;

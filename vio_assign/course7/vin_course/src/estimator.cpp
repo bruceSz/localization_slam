@@ -181,7 +181,7 @@ void Estimator::processImage(const map<int, vector<pair<int, Eigen::Matrix<doubl
         }
     }
 
-    cout << "solver_flag: " << solver_flag << std::endl;
+    //cout << "solver_flag: " << solver_flag << std::endl;
     if (solver_flag == INITIAL)
     {
         if (frame_count == WINDOW_SIZE)
@@ -489,7 +489,7 @@ bool Estimator::relativePose(Matrix3d &relative_R, Vector3d &relative_T, int &l)
             // 
             
             average_parallax = 1.0 * sum_parallax / int(corres.size());
-            cout << "avg parallax: " << average_parallax << std::endl;
+            //cout << "avg parallax: " << average_parallax << std::endl;
              
             if (average_parallax * 460 > 30 && m_estimator.solveRelativeRT(corres, relative_R, relative_T))
             {
@@ -836,7 +836,7 @@ void Estimator::MargOldFrame()
     std::vector<std::shared_ptr<backend::Vertex>> marg_vertex;
     marg_vertex.push_back(vertexCams_vec[0]);
     marg_vertex.push_back(vertexVB_vec[0]);
-    problem.Marginalize(marg_vertex, pose_dim);
+    //problem.Marginalize(marg_vertex, pose_dim);
     Hprior_ = problem.GetHessianPrior();
     bprior_ = problem.GetbPrior();
     errprior_ = problem.GetErrPrior();
@@ -908,7 +908,7 @@ void Estimator::MargNewFrame()
     // 把窗口倒数第二个帧 marg 掉
     marg_vertex.push_back(vertexCams_vec[WINDOW_SIZE - 1]);
     marg_vertex.push_back(vertexVB_vec[WINDOW_SIZE - 1]);
-    problem.Marginalize(marg_vertex, pose_dim);
+    //problem.Marginalize(marg_vertex, pose_dim);
     Hprior_ = problem.GetHessianPrior();
     bprior_ = problem.GetbPrior();
     errprior_ = problem.GetErrPrior();

@@ -8,6 +8,7 @@
 #include "eigen_types.h"
 #include "edge.h"
 #include "vertex.h"
+#include "thread_pool.h"
 
 typedef unsigned long ulong;
 
@@ -199,8 +200,9 @@ private:
     std::map<unsigned long, std::shared_ptr<Vertex>> idx_landmark_vertices_;    // 以ordering排序的landmark顶点
 
     // verticies need to marg. <Ordering_id_, Vertex>
-    HashVertex verticies_marg_;
 
+    HashVertex verticies_marg_;
+    std::unique_ptr<ThreadPool> tp_ = nullptr;
     bool bDebug = false;
     double t_hessian_cost_ = 0.0;
     double t_PCGsovle_cost_ = 0.0;

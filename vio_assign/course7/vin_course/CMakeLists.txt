@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(vins_estimator)
 
-set(CMAKE_BUILD_TYPE "Release")
-set(CMAKE_CXX_FLAGS "-std=c++11")
+#set(CMAKE_BUILD_TYPE "Release ")
+set(CMAKE_CXX_FLAGS "-std=c++11 -fopenmp -mfpmath=sse -msse2")
+#set(CMAKE_CXX_FLAGS "-std=c++11 ")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
@@ -13,6 +14,7 @@ find_package(Pangolin REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(Boost REQUIRED COMPONENTS filesystem program_options system)
 
+#find_package(Protobuf REQUIRED)
 
 message(WARNING "OpenCV_VERSION: ${OpenCV_VERSION}")
 
@@ -61,8 +63,8 @@ ADD_LIBRARY(MyVio SHARED
 
     src/backend/vertex.cc
     src/backend/edge.cc
-    #src/backend/problem.cc
-    src/backend/problem_dogleg.cc
+    src/backend/problem.cc
+    #src/backend/problem_faster_hessian.cc    
     src/backend/vertex_pose.cc
     src/backend/edge_reprojection.cc
     src/backend/edge_imu.cc
@@ -77,9 +79,48 @@ target_link_libraries(MyVio
 	${Pangolin_LIBRARIES}
   camera_model)
 
+  ADD_LIBRARY(MyVioDogLeg SHARED
+  src/System.cpp
+  src/param.cpp
+  src/System_sim.cpp
+  src/parameters.cpp
+  src/estimator.cpp
+  src/feature_manager.cpp
+  src/feature_tracker.cpp
+
+  src/utility/utility.cpp
+  src/initial/solve_5pts.cpp
+  src/initial/initial_aligment.cpp
+  src/initial/initial_sfm.cpp
+  src/initial/initial_ex_rotation.cpp
+
+  src/backend/vertex.cc
+  src/backend/edge.cc
+  #src/backend/problem.cc
+  src/backend/problem_dogleg.cc
+  src/backend/vertex_pose.cc
+  src/backend/edge_reprojection.cc
+  src/backend/edge_imu.cc
+  src/backend/edge_prior.cpp
+  src/backend/loss_function.cc
+  src/backend/imu_integration.cc
+  )
+
+target_link_libraries(MyVioDogLeg  
+${OpenCV_LIBS}  
+${CERES_LIBRARIES}
+${Pangolin_LIBRARIES}
+camera_model)
+
+
 add_executable(run_euroc test/run_euroc.cpp)
 target_link_libraries(run_euroc 
   MyVio  
+  -lpthread) 
+
+add_executable(run_euroc_dl test/run_euroc.cpp)
+target_link_libraries(run_euroc_dl
+  MyVioDogLeg
   -lpthread) 
 
 add_executable(run_vio_sim test/run_sim_vio.cpp)
@@ -87,6 +128,17 @@ target_link_libraries(run_vio_sim
   MyVio
   -lpthread
 )
+
+
+add_executable(openmp_test
+  src/test/openmp_test.cc
+)
+
+add_executable(tp_test
+  src/test/thread_pool_test.cc
+)
+  
+
 
 add_executable(testCurveFitting test/CurveFitting.cpp)
 target_link_libraries(testCurveFitting MyVio)

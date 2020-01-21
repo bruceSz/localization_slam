@@ -28,7 +28,7 @@ std::shared_ptr<sim::System> pSystem;
 
 void PubImuData()
 {
-	string sImu_data_file = sData_path + "imu_pose.txt";
+	string sImu_data_file = sData_path + "imu_pose_noise.txt";
 	cout << "1 PubImuData start sImu_data_filea: " << sImu_data_file << endl;
 	ifstream fsImu;
 	fsImu.open(sImu_data_file.c_str());

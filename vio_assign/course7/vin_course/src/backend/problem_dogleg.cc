@@ -204,16 +204,18 @@ bool Problem::Solve(int iterations) {
             cout << "stop f(x) = 0 for f(x) is so small";
             break;
         }
-
+        std::cout << "Begin to solve linear system." << std::endl;
         // solve and update delta_x_ based on gauss_newton or schur;
         SolveLinearSystem();
         
-        auto params = getAllParameters();
+        //VecX params = getAllParameters();
         
         //2. hgn = delta_x_ here. In pure gauss_newton senario it is: (J^t*J)^-1 *( J^t * f)*(-1)
         auto hgn = delta_x_;
+        std::cout << "grad shape: " << grad.rows() << " rows; " << grad.cols() << " cols." << std::endl;
+        std::cout << "Jac shapr: " << Jac_.rows() << " rows; " << Jac_.cols() << " cols." << std::endl;
         //3. alpha = grad.squaredNorm / (Jac*grad).squaredNorm();
-        auto alpha = -1 * b_.squaredNorm() / (Jac_ * grad).squaredNorm();
+        auto alpha = grad.squaredNorm() / (Jac_ * grad).squaredNorm();
         //3. stepest_desc = -alpha * grad;
         auto stepest_desc = -alpha * grad;
         //3. compute hdl(delta_x_ based on dogleg).
@@ -233,8 +235,8 @@ bool Problem::Solve(int iterations) {
             dog_leg = alpha * stepest_desc +  beta * (hgn - alpha * stepest_desc);
 
         }
-
-        if(dog_leg.norm() <= eps2 *(params.norm() + eps2))
+        
+        if(dog_leg.norm() <= eps2 )//*(params.norm() + eps2))
         {
             cout << "stop because change in x is small" << endl;
             break;
@@ -294,7 +296,7 @@ bool Problem::Solve(int iterations) {
             {
                 
                 dogleg_radius_ = dogleg_radius_ / 2.0;
-                if(dogleg_radius_ <= eps2*(params.norm()+eps2))
+                if(dogleg_radius_ <= eps2 )//*(params.norm()+eps2))
                 {
                     cout << "trust region radius is too small." << endl;
                     break;
@@ -372,16 +374,16 @@ void Problem::MakeHessian() {
     ulong size = ordering_generic_;
     MatXX H(MatXX::Zero(size, size));
     // jac ros: number of edges
-    MatXX Jac(MatXX::Zero(2*edges_.size(),size));
+    MatXX Jac(MatXX::Zero(15*edges_.size(),size));
     VecX b(VecX::Zero(size));
 
     // TODO:: accelate, accelate, accelate
 //#ifdef USE_OPENMP
 //#pragma omp parallel for
 //#endif
-    int i=0;
+    int row_idx=0;
     for (auto &edge: edges_) {
-        auto idx_residual = 2*i;
+        
         
         edge.second->ComputeResidual();
         edge.second->ComputeJacobians();
@@ -399,8 +401,17 @@ void Problem::MakeHessian() {
             ulong dim_i = v_i->LocalDimension();
             //TODO assert check here. 
             //col number of jacobian should equal to vertex dimention.
+
             assert(jacobian_i.cols() == dim_i);
-            Jac.block(idx_residual, index_i, 2, dim_i) = jacobian_i;
+            //assert(jacobian_i.rows() == 2);
+            if(jacobian_i.rows() != 2) {
+                //std::cout << "jacobian_ size: " << jacobian_i.size() 
+                //    << "rows: " << jacobian_i.rows() 
+                //    << "cols: " << jacobian_i.cols() 
+                //     << std::endl;
+            }//
+            Jac.block(row_idx, index_i, jacobian_i.rows(), dim_i) = jacobian_i;
+            row_idx += jacobian_i.rows();
             // 鲁棒核函数会修改残差和信息矩阵，如果没有设置 robust cost function，就会返回原来的
             double drho;
             MatXX robustInfo(edge.second->Information().rows(),edge.second->Information().cols());
@@ -429,11 +440,12 @@ void Problem::MakeHessian() {
             }
             b.segment(index_i, dim_i).noalias() -= drho * jacobian_i.transpose()* edge.second->Information() * edge.second->Residual();
         }
-        i++;
+        //i++;
     }
     Hessian_ = H;
     b_ = b;
-    Jac_ = Jac;
+    //update Jac_ each time.
+    Jac_.swap(Jac) ;
     t_hessian_cost_ += t_h.toc();
 
     if(H_prior_.rows() > 0)
@@ -528,15 +540,33 @@ void Problem::SolveLinearSystem() {
 }
 
 VecX Problem::getAllParameters() {
-    VecX paras  = VecX::Zero(ordering_generic_) ;
+
+    
+    int64_t total= 0;
+    for(auto vertex: verticies_) {
+        ulong dim = vertex.second->LocalDimension();
+        total += dim;
+    }
+    assert(total = ordering_generic_);
+
+    VecX paras(VecX::Zero(total)) ;
+    std::cout << "paras size: " << paras.size()  <<
+        " rows: " << paras.rows() << "; cols: " << paras.cols() << std::endl;
 
     for (auto vertex: verticies_) {
         vertex.second->BackUpParameters();    // 保存上次的估计值
 
         ulong idx = vertex.second->OrderingId();
         ulong dim = vertex.second->LocalDimension();
+        assert(idx < paras.size());
+        //assert(idx + dim < paras.size());
         // or assign item by item.
-        paras.segment(idx, dim) =  vertex.second->Parameters();
+        for(int i=0; i<dim; i++) {
+            auto t_idx = idx+i;
+            assert(t_idx < total);
+            paras(t_idx) = vertex.second->Parameters()(i);
+        }
+        //paras.segment(idx, dim) =  vertex.second->Parameters();
         
     }
     return paras;
@@ -787,12 +817,15 @@ bool Problem::Marginalize(const std::vector<std::shared_ptr<Vertex> > margVertex
 
                 assert(hessian.rows() == v_i->LocalDimension() && hessian.cols() == v_j->LocalDimension());
                 // 所有的信息矩阵叠加起来
+                std::cout << "Before h Merge: " << std::endl;
                 H_marg.block(index_i, index_j, dim_i, dim_j) += hessian;
                 if (j != i) {
                     // 对称的下三角
+                    std::cout << "Before h Merge the symmetric h merge: " << std::endl;
                     H_marg.block(index_j, index_i, dim_j, dim_i) += hessian.transpose();
                 }
             }
+            std::cout << "before b_merge sub  : " << std::endl;
             b_marg.segment(index_i, dim_i) -= drho * jacobian_i.transpose() * edge->Information() * edge->Residual();
         }
 
@@ -828,7 +861,14 @@ bool Problem::Marginalize(const std::vector<std::shared_ptr<Vertex> > margVertex
     VecX b_prior_before = b_prior_;
     if(H_prior_.rows() > 0)
     {
+        std::cout << "before h prios assign.\n"
+            << "h marg size: rows: " << H_marg.rows() << "; cols : " << H_marg.cols() << "\n"
+            << "b marg size: rows: " << b_marg.rows() << "; cols : " << b_marg.cols() << "\n"
+            << "h_prior size: rows: " << H_prior_.rows() << "; cols : " << H_prior_.cols() << "\n"
+            << "b_prior size: rows: " << b_prior_.rows() << "; cols : " << b_prior_.cols()
+             << std::endl;
         H_marg += H_prior_;
+        std::cout << "after h_marg updaed." << std::endl;
         b_marg += b_prior_;
     }
 

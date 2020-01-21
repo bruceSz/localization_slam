@@ -121,7 +121,7 @@ void FeatureManager::debugShow()
 vector<pair<Vector3d, Vector3d>> FeatureManager::getCorresponding(int frame_count_l, int frame_count_r)
 {
     vector<pair<Vector3d, Vector3d>> corres;
-    std::cout << "There are total " << feature.size() << " features." << std::endl;
+    // "There are total " << feature.size() << " features." << std::endl;
     for (auto &it : feature)
     {
         if (it.start_frame <= frame_count_l && it.endFrame() >= frame_count_r)
@@ -133,9 +133,9 @@ vector<pair<Vector3d, Vector3d>> FeatureManager::getCorresponding(int frame_coun
             a = it.feature_per_frame[idx_l].point;
 
             b = it.feature_per_frame[idx_r].point;
-            cout << "l idx: " << idx_l << " r idx: " << idx_r <<  "-----ft in l: \n" << a << "\n; vs ft in r: \n" << b 
-                << "normalized u: " << it.feature_per_frame[idx_l].uv.x() << " normalized v: " << it.feature_per_frame[idx_r].uv.y()
-                << std::endl;
+            //cout << "l idx: " << idx_l << " r idx: " << idx_r <<  "-----ft in l: \n" << a << "\n; vs ft in r: \n" << b 
+            //    << "normalized u: " << it.feature_per_frame[idx_l].uv.x() << " normalized v: " << it.feature_per_frame[idx_r].uv.y()
+            //    << std::endl;
             corres.push_back(make_pair(a, b));
         }
     }

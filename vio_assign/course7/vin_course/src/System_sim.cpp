@@ -349,7 +349,7 @@ vector<pair<vector<ImuConstPtr>, ImgConstPtr>> System::getMeasurements()
     {
         if (imu_buf.empty() || feature_buf.empty())
         {
-            cerr << std::this_thread::get_id() << "1 imu_buf.empty() || feature_buf.empty()" << endl;
+           // cerr << std::this_thread::get_id() << "1 imu_buf.empty() || feature_buf.empty()" << endl;
             return measurements;
         }
         // if newest imu is older than that of oldest feature ts.

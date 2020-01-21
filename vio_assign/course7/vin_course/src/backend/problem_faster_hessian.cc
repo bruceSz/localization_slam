@@ -5,6 +5,9 @@
 #include "backend/problem.h"
 #include "utility/tic_toc.h"
 
+#include <mutex>
+#include <memory>
+
 #ifdef USE_OPENMP
 
 #include <omp.h>
@@ -24,6 +27,8 @@ void writeToCSVfile(std::string name, Eigen::MatrixXd matrix) {
 namespace myslam {
 namespace backend {
 void Problem::LogoutVectorSize() {
+
+    
     // LOG(INFO) <<
     //           "1 problem::LogoutVectorSize verticies_:" << verticies_.size() <<
     //           " edges:" << edges_.size();
@@ -33,6 +38,8 @@ Problem::Problem(ProblemType problemType) :
     problemType_(problemType) {
     LogoutVectorSize();
     verticies_marg_.clear();
+
+    tp_.reset(new ThreadPool(50,1300));
 }
 
 Problem::~Problem() {
@@ -301,71 +308,104 @@ bool Problem::CheckOrdering() {
 }
 
 void Problem::MakeHessian() {
+
+    static int mk_no = 0;
+
     TicToc t_h;
     // 直接构造大的 H 矩阵
     ulong size = ordering_generic_;
+    std::mutex mutex;
     MatXX H(MatXX::Zero(size, size));
-    VecX b(VecX::Zero(size));
+    VecX b(VecX::Zero(size));   
+                        
 
     // TODO:: accelate, accelate, accelate
-    #ifdef USE_OPENMP
-    #pragma omp parallel for
-    #endif
-    //uint compute_ts = 0;
-    for(auto &edge: edges_) {
-        TicToc tk_local;
-        edge.second->ComputeResidual();
-        edge.second->ComputeJacobians();
+//#ifdef USE_OPENMP
+//#pragma omp parallel for
+//#endif
+    std::atomic<int> n_edge ;
+    int total = edges_.size();
+    n_edge.exchange(edges_.size());
+    int enq_seq = 0;
+    std::atomic_uint64_t compute_ts = {0};
+    for (auto &edge: edges_) {
 
-        // TODO:: robust cost
-        auto jacobians = edge.second->Jacobians();
-        auto verticies = edge.second->Verticies();
-        assert(jacobians.size() == verticies.size());
-        for (size_t i = 0; i < verticies.size(); ++i) {
-            auto v_i = verticies[i];
-            if (v_i->IsFixed()) continue;    // Hessian 里不需要添加它的信息，也就是它的雅克比为 0
+        auto compute_lambda = [&edge, &H, &b,size, &mutex,&n_edge, mk_no, total, &compute_ts]() {
+            TicToc tk_local;
+            edge.second->ComputeResidual();
+            edge.second->ComputeJacobians();
 
-            auto jacobian_i = jacobians[i];
-            ulong index_i = v_i->OrderingId();
-            ulong dim_i = v_i->LocalDimension();
+            // TODO:: robust cost
+            auto jacobians = edge.second->Jacobians();
+            auto verticies = edge.second->Verticies();
+            assert(jacobians.size() == verticies.size());
+            for (size_t i = 0; i < verticies.size(); ++i) {
+                auto v_i = verticies[i];
+                if (v_i->IsFixed()) continue;    // Hessian 里不需要添加它的信息，也就是它的雅克比为 0
 
-            // 鲁棒核函数会修改残差和信息矩阵，如果没有设置 robust cost function，就会返回原来的
-            double drho;
-            MatXX robustInfo(edge.second->Information().rows(),edge.second->Information().cols());
-            edge.second->RobustInfo(drho,robustInfo);
+                auto jacobian_i = jacobians[i];
+                ulong index_i = v_i->OrderingId();
+                ulong dim_i = v_i->LocalDimension();
 
-            MatXX JtW = jacobian_i.transpose() * robustInfo;
-            for (size_t j = i; j < verticies.size(); ++j) {
-                auto v_j = verticies[j];
+                // 鲁棒核函数会修改残差和信息矩阵，如果没有设置 robust cost function，就会返回原来的
+                double drho;
+                MatXX robustInfo(edge.second->Information().rows(),edge.second->Information().cols());
+                edge.second->RobustInfo(drho,robustInfo);
 
-                if (v_j->IsFixed()) continue;
+                MatXX JtW = jacobian_i.transpose() * robustInfo;
+                for (size_t j = i; j < verticies.size(); ++j) {
+                    auto v_j = verticies[j];
 
-                auto jacobian_j = jacobians[j];
-                ulong index_j = v_j->OrderingId();
-                ulong dim_j = v_j->LocalDimension();
+                    if (v_j->IsFixed()) continue;
 
-                assert(v_j->OrderingId() != -1);
-                MatXX hessian = JtW * jacobian_j;
+                    auto jacobian_j = jacobians[j];
+                    ulong index_j = v_j->OrderingId();
+                    ulong dim_j = v_j->LocalDimension();
 
-                // 所有的信息矩阵叠加起来
-                H.block(index_i, index_j, dim_i, dim_j).noalias() += hessian;
-                if (j != i) {
-                    // 对称的下三角
-                    H.block(index_j, index_i, dim_j, dim_i).noalias() += hessian.transpose();
+                    assert(v_j->OrderingId() != -1);
+                    MatXX hessian = JtW * jacobian_j;
 
+                    {
+                        //std::lock_guard<std::mutex> l(mutex);
+                        // 所有的信息矩阵叠加起来
+                        H.block(index_i, index_j, dim_i, dim_j).noalias() += hessian;
+                        if (j != i) {
+                            // 对称的下三角
+                            H.block(index_j, index_i, dim_j, dim_i).noalias() += hessian.transpose();
+
+                        }
+                    }
+                    
                 }
+                {
+                    //std::lock_guard<std::mutex> l(mutex);
+                    b.segment(index_i, dim_i).noalias() -= drho * jacobian_i.transpose()* edge.second->Information() * edge.second->Residual();
+                }
+                
             }
-            b.segment(index_i, dim_i).noalias() -= drho * jacobian_i.transpose()* edge.second->Information() * edge.second->Residual();
-        }
-        //auto cost_micro = tk_local.toc()*1000;
-        //compute_ts += cost_micro;
-
+            n_edge.fetch_sub(1);
+            double cost_micro = tk_local.toc() * 1000;
+            compute_ts.fetch_add(cost_micro);
+            //cout << std::this_thread::get_id() <<  "Total edges:" << total <<  "fetch and sub with 1 get: " 
+            //    << n_edge.load() << " at " << mk_no << endl;
+        };
+        tp_->Enqueue(compute_lambda);
+        //cout << "Total edges:" << total << " Enq no: " << ++enq_seq  <<  "Enq in mk: " << mk_no << endl;
     }
+    //cout << "Enqueue done. mk_no: " << mk_no << endl;
+    // wait until it finished.
+    while(n_edge.load()>0) ;
+        ;
+    //cout << "Wait for multi-thread computation of Hessian. mk_no:" << mk_no << endl;
+    
+    mk_no++;
+
     Hessian_ = H;
     b_ = b;
     t_hessian_cost_ += t_h.toc();
-    std::cout << "hessian cost xxxxxx ts: " << t_h.toc() << " millisecs" ;
-
+    std::cout << "total edge is : " << total << " " << std::endl;
+    std::cout << "hessian cost  faster hessian ts: " << t_h.toc() << " millisecs" << std::endl;
+    std::cout << "hessian real compute cost faster hessian ts" << compute_ts.load() << " micro second." << std::endl; 
     if(H_prior_.rows() > 0)
     {
         MatXX H_prior_tmp = H_prior_;
