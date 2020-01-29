@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(vins_estimator)
 
 set(CMAKE_BUILD_TYPE "Release")
-set(CMAKE_CXX_FLAGS "-std=c++11")
+set(CMAKE_CXX_FLAGS "-std=c++11 -g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
@@ -61,8 +61,8 @@ ADD_LIBRARY(MyVio SHARED
 
     src/backend/vertex.cc
     src/backend/edge.cc
-    #src/backend/problem.cc
-    src/backend/problem_dogleg.cc
+    src/backend/problem.cc
+    #src/backend/problem_dogleg.cc
     src/backend/vertex_pose.cc
     src/backend/edge_reprojection.cc
     src/backend/edge_imu.cc
