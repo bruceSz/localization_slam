@@ -179,7 +179,7 @@ vector<pair<vector<ImuConstPtr>, ImgConstPtr>> System::getMeasurements()
     {
         if (imu_buf.empty() || feature_buf.empty())
         {
-            cerr << "1 imu_buf.empty() || feature_buf.empty()" << endl;
+            //cerr << "1 imu_buf.empty() || feature_buf.empty()" << endl;
             return measurements;
         }
 
