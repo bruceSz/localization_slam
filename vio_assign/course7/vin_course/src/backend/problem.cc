@@ -5,6 +5,8 @@
 #include "backend/problem.h"
 #include "utility/tic_toc.h"
 
+#include "gflags/gflags.h"
+
 #ifdef USE_OPENMP
 
 #include <omp.h>
@@ -12,6 +14,8 @@
 #endif
 
 using namespace std;
+
+DEFINE_int32(thread_pool_size, 1 , "number of threaded executor in thread pool.");
 
 // define the format you want, you only need one instance of this...
 const static Eigen::IOFormat CSVFormat(Eigen::StreamPrecision, Eigen::DontAlignCols, ", ", "\n");
@@ -33,6 +37,7 @@ Problem::Problem(ProblemType problemType) :
     problemType_(problemType) {
     LogoutVectorSize();
     verticies_marg_.clear();
+    tp_.reset(new ThreadPool(FLAGS_thread_pool_size,1300));
 }
 
 Problem::~Problem() {
@@ -164,6 +169,134 @@ bool Problem::RemoveEdge(std::shared_ptr<Edge> edge) {
 
     edges_.erase(edge->Id());
     return true;
+}
+
+void Problem::MakeHessian() {
+
+    static int mk_no = 0;
+
+    TicToc t_h;
+    // 直接构造大的 H 矩阵
+    ulong size = ordering_generic_;
+    std::mutex mutex;
+    MatXX H(MatXX::Zero(size, size));
+    VecX b(VecX::Zero(size));   
+                        
+
+    // TODO:: accelate, accelate, accelate
+//#ifdef USE_OPENMP
+//#pragma omp parallel for
+//#endif
+    std::atomic<int> n_edge ;
+    int total = edges_.size();
+    n_edge.exchange(edges_.size());
+    int enq_seq = 0;
+    std::atomic_uint64_t compute_ts = {0};
+    for (auto &edge: edges_) {
+
+        auto compute_lambda = [&edge, &H, &b,size, &mutex,&n_edge, mk_no, total, &compute_ts]() {
+            TicToc tk_local;
+            edge.second->ComputeResidual();
+            edge.second->ComputeJacobians();
+
+            // TODO:: robust cost
+            auto jacobians = edge.second->Jacobians();
+            auto verticies = edge.second->Verticies();
+            assert(jacobians.size() == verticies.size());
+            for (size_t i = 0; i < verticies.size(); ++i) {
+                auto v_i = verticies[i];
+                if (v_i->IsFixed()) continue;    // Hessian 里不需要添加它的信息，也就是它的雅克比为 0
+
+                auto jacobian_i = jacobians[i];
+                ulong index_i = v_i->OrderingId();
+                ulong dim_i = v_i->LocalDimension();
+
+                // 鲁棒核函数会修改残差和信息矩阵，如果没有设置 robust cost function，就会返回原来的
+                double drho;
+                MatXX robustInfo(edge.second->Information().rows(),edge.second->Information().cols());
+                edge.second->RobustInfo(drho,robustInfo);
+
+                MatXX JtW = jacobian_i.transpose() * robustInfo;
+                for (size_t j = i; j < verticies.size(); ++j) {
+                    auto v_j = verticies[j];
+
+                    if (v_j->IsFixed()) continue;
+
+                    auto jacobian_j = jacobians[j];
+                    ulong index_j = v_j->OrderingId();
+                    ulong dim_j = v_j->LocalDimension();
+
+                    assert(v_j->OrderingId() != -1);
+                    MatXX hessian = JtW * jacobian_j;
+
+                    {
+                        //std::lock_guard<std::mutex> l(mutex);
+                        // 所有的信息矩阵叠加起来
+                        H.block(index_i, index_j, dim_i, dim_j).noalias() += hessian;
+                        if (j != i) {
+                            // 对称的下三角
+                            H.block(index_j, index_i, dim_j, dim_i).noalias() += hessian.transpose();
+
+                        }
+                    }
+                    
+                }
+                {
+                    //std::lock_guard<std::mutex> l(mutex);
+                    b.segment(index_i, dim_i).noalias() -= drho * jacobian_i.transpose()* edge.second->Information() * edge.second->Residual();
+                }
+                
+            }
+            n_edge.fetch_sub(1);
+            double cost_micro = tk_local.toc() * 1000;
+            compute_ts.fetch_add(cost_micro);
+            //cout << std::this_thread::get_id() <<  "Total edges:" << total <<  "fetch and sub with 1 get: " 
+            //    << n_edge.load() << " at " << mk_no << endl;
+        };
+        tp_->Enqueue(compute_lambda);
+        //cout << "Total edges:" << total << " Enq no: " << ++enq_seq  <<  "Enq in mk: " << mk_no << endl;
+    }
+    //cout << "Enqueue done. mk_no: " << mk_no << endl;
+    // wait until it finished.
+    while(n_edge.load()>0) 
+        ;
+    cout << "idle threads: "  << tp_->NumIdle() << std::endl;
+    assert(tp_->NumIdle()+2 >= FLAGS_thread_pool_size);
+        
+    //cout << "Wait for multi-thread computation of Hessian. mk_no:" << mk_no << endl;
+    
+    mk_no++;
+
+    Hessian_ = H;
+    b_ = b;
+    t_hessian_cost_ += t_h.toc();
+    //std::cout << "total edge is : " << total << " " << std::endl;
+    //std::cout << "hessian cost  faster hessian ts: " << t_h.toc() << " millisecs" << std::endl;
+    //std::cout << "hessian real compute cost faster hessian ts" << compute_ts.load() << " micro second." << std::endl; 
+    if(H_prior_.rows() > 0)
+    {
+        MatXX H_prior_tmp = H_prior_;
+        VecX b_prior_tmp = b_prior_;
+
+        /// 遍历所有 POSE 顶点，然后设置相应的先验维度为 0 .  fix 外参数, SET PRIOR TO ZERO
+        /// landmark 没有先验
+        for (auto vertex: verticies_) {
+            if (IsPoseVertex(vertex.second) && vertex.second->IsFixed() ) {
+                int idx = vertex.second->OrderingId();
+                int dim = vertex.second->LocalDimension();
+                H_prior_tmp.block(idx,0, dim, H_prior_tmp.cols()).setZero();
+                H_prior_tmp.block(0,idx, H_prior_tmp.rows(), dim).setZero();
+                b_prior_tmp.segment(idx,dim).setZero();
+//                std::cout << " fixed prior, set the Hprior and bprior part to zero, idx: "<<idx <<" dim: "<<dim<<std::endl;
+            }
+        }
+        Hessian_.topLeftCorner(ordering_poses_, ordering_poses_) += H_prior_tmp;
+        b_.head(ordering_poses_) += b_prior_tmp;
+    }
+
+    delta_x_ = VecX::Zero(size);  // initial delta_x = 0_n;
+
+
 }
 
 bool Problem::Solve(int iterations) {
@@ -300,7 +433,7 @@ bool Problem::CheckOrdering() {
     return true;
 }
 
-void Problem::MakeHessian() {
+void Problem::MakeHessianOld() {
     TicToc t_h;
     // 直接构造大的 H 矩阵
     ulong size = ordering_generic_;

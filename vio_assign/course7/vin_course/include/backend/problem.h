@@ -9,6 +9,8 @@
 #include "edge.h"
 #include "vertex.h"
 
+#include "thread_pool.h"
+
 typedef unsigned long ulong;
 
 namespace myslam {
@@ -145,6 +147,7 @@ private:
     void AddLambdatoHessianLM();
 
     void RemoveLambdaHessianLM();
+    void MakeHessianOld();
 
     /// LM 算法中用于判断 Lambda 在上次迭代中是否可以，以及Lambda怎么缩放
     bool IsGoodStepInLM();
@@ -201,6 +204,7 @@ private:
     // verticies need to marg. <Ordering_id_, Vertex>
     HashVertex verticies_marg_;
 
+    std::shared_ptr<ThreadPool>  tp_ = nullptr;
     bool bDebug = false;
     double t_hessian_cost_ = 0.0;
     double t_PCGsovle_cost_ = 0.0;

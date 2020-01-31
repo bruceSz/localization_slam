@@ -12,6 +12,7 @@
 #include <highgui.h>
 #include <eigen3/Eigen/Dense>
 #include "System.h"
+#include <gflags/gflags.h>
 
 using namespace std;
 using namespace cv;
@@ -149,12 +150,15 @@ void DrawIMGandGLinMainThrd(){
 
 int main(int argc, char **argv)
 {
+
+	google::ParseCommandLineFlags(&argc, &argv, true);
 	if(argc != 3)
 	{
 		cerr << "./run_euroc PATH_TO_FOLDER/MH-05/mav0 PATH_TO_CONFIG/config \n" 
 			<< "For example: ./run_euroc /home/stevencui/dataset/EuRoC/MH-05/mav0/ ../config/"<< endl;
 		return -1;
 	}
+
 	sData_path = argv[1];
 	sConfig_path = argv[2];
 
