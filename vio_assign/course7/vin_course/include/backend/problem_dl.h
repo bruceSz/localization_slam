@@ -147,12 +147,14 @@ private:
     void AddLambdatoHessianLM();
 
     void RemoveLambdaHessianLM();
-    void MakeHessianOld();
     void MakeHessianNew();
+
+    VecX getAllParameters();
     //void MakeHessian();
 
     /// LM 算法中用于判断 Lambda 在上次迭代中是否可以，以及Lambda怎么缩放
     bool IsGoodStepInLM();
+    double computeCurrentChi();
 
     /// PCG 迭代线性求解器
     VecX PCGSolver(const MatXX &A, const VecX &b, int maxIter);
@@ -187,6 +189,8 @@ private:
     MatXX H_ll_;
     VecX b_ll_;
 
+    MatXX Jac_;
+    double  dogleg_radius_;
     /// all vertices
     HashVertex verticies_;
 
@@ -210,6 +214,7 @@ private:
     bool bDebug = false;
     double t_hessian_cost_ = 0.0;
     double t_PCGsovle_cost_ = 0.0;
+    double eps1 = 1e-12, eps2 = 1e-12, eps3 = 1e-12;
 };
 
 }

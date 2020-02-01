@@ -636,7 +636,6 @@ void Problem::RemoveLambdaHessianLM() {
     }
 }
 
-
 void getAllResidualNorm() {
     return;   
 }
@@ -652,9 +651,6 @@ double Problem::computeCurrentChi() {
     tempChi *= 0.5;          // 1/2 * err^2
     return tempChi; 
 }
-
-
-
 
 bool Problem::IsGoodStepInLM() {
     double scale = 0;
