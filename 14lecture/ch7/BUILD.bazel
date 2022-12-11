@@ -1,0 +1,42 @@
+
+
+cc_binary(
+    name = "orb_cv",
+    srcs = ["orb_cv.cc"],
+     copts = [
+        "-std=c++14 -I/usr/include/opencv4 -D_GLIBCXX_USE_CXX11_ABI=1",
+    ],
+    linkopts= [
+        "-lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_imgcodecs -ljpeg -lopencv_features2d",
+    ]
+
+
+)
+
+
+cc_binary(
+    name = "my_orb",
+    srcs = [ "my_orb.cc"],
+    copts = [
+        "-std=c++14 -I/usr/include/opencv4 -D_GLIBCXX_USE_CXX11_ABI=1",
+    ],
+    linkopts= [
+        "-lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_imgcodecs -ljpeg -lopencv_features2d",
+    ],
+    deps = [
+        "my_orb_impl"
+    ]
+)
+
+cc_library(
+    name = "my_orb_impl",
+    srcs = ["my_orb_impl.cc"],
+    hdrs = ["orb_header.h"],
+     copts = [
+        "-std=c++14 -I/usr/include/opencv4 -D_GLIBCXX_USE_CXX11_ABI=1  -msse4.2",
+    ],
+    linkopts= [
+        "-lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_imgcodecs -ljpeg -lopencv_features2d",
+    ]
+
+)
