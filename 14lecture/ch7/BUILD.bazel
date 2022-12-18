@@ -40,3 +40,29 @@ cc_library(
     ]
 
 )
+
+cc_binary(
+    name = "triangle",
+    srcs = ["triangle.cc"],
+    copts = [
+        "-std=c++14 -I/usr/include/opencv4 -D_GLIBCXX_USE_CXX11_ABI=1",
+    ],
+    linkopts= [
+        "-lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_imgcodecs -ljpeg -lopencv_features2d",
+    ],
+    deps = [
+        ":common",
+    ]
+)
+
+cc_library(
+    name = "common",
+    srcs = ["common.cc"],
+    hdrs = ["common.h"],
+    copts = [
+        "-std=c++14 -I/usr/include/opencv4 -D_GLIBCXX_USE_CXX11_ABI=1",
+    ],
+    linkopts= [
+        "-lopencv_core -lopencv_highgui -lopencv_calib3d -lopencv_imgproc -lopencv_imgcodecs -ljpeg -lopencv_features2d ",
+    ],
+)
