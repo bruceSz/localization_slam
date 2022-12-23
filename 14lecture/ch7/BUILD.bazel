@@ -66,3 +66,35 @@ cc_library(
         "-lopencv_core -lopencv_highgui -lopencv_calib3d -lopencv_imgproc -lopencv_imgcodecs -ljpeg -lopencv_features2d ",
     ],
 )
+
+
+cc_binary(
+    name = "est_2d2d",
+    srcs = ["pose_estimate_2d2d.cc"],
+    copts = [
+        "-std=c++14 -I/usr/include/opencv4 -D_GLIBCXX_USE_CXX11_ABI=1",
+    ],
+    linkopts= [
+        "-lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_imgcodecs -ljpeg -lopencv_features2d",
+    ],
+    deps = [
+        ":common",
+    ]
+)
+
+
+cc_binary(
+    name = "est_3d2d",
+    srcs = ["pose_estimate_3d2d.cc"],
+    copts = [
+        "-std=c++14 -I/usr/include/opencv4 -D_GLIBCXX_USE_CXX11_ABI=1",
+    ],
+    linkopts= [
+        "-lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_imgcodecs -ljpeg -lopencv_features2d  /usr/local/lib -lg2o_core -lg2o_stuff",
+    ],
+    deps = [
+        ":common",
+    ]
+)
+
+ 
