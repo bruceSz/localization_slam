@@ -14,9 +14,9 @@ void pose_estimate_2dn2d(const std::vector<cv::KeyPoint> kp1,
 
 
 void pose_estimation_3d3d (
-    const vector<Point3f>& pts1,
-    const vector<Point3f>& pts2,
-    Mat& R, Mat& t
+    const std::vector<cv::Point3f>& pts1,
+    const std::vector<cv::Point3f>& pts2,
+    cv::Mat& R, cv::Mat& t
 );
 
 void triangulation(const std::vector<cv::KeyPoint>& kp1,
@@ -29,11 +29,11 @@ void triangulation(const std::vector<cv::KeyPoint>& kp1,
 
 void bundleAdjustment(const std::vector<cv::Point3f> pt_3d,
                       const std::vector<cv::Point2f> pt_2d,
-                      const Mat& k, Mat& R, Mat& t) ;
+                      const cv::Mat& k, cv::Mat& R, cv::Mat& t) ;
 
 void OptICP(const std::vector<cv::Point3f> pt1, 
                       const std::vector<cv::Point3f> pt2,
-                      Mat& R, Mat& t);
+                      cv::Mat& R, cv::Mat& t);
 /// 作图用
 inline cv::Scalar get_color(float depth) {
   float up_th = 50, low_th = 10, th_range = up_th - low_th;

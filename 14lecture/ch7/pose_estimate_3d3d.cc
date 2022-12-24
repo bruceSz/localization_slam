@@ -2,6 +2,8 @@
 #include <vector>
 #include <opencv2/opencv.hpp>
 
+#include <opencv2/imgcodecs/legacy/constants_c.h>
+
 #include "common.h"
 
 
@@ -57,7 +59,7 @@ int main(int argc, char** argv) {
     cout << "3-3 pairs:" << pt1.size() << endl;
 
     Mat R, t;
-    pose_estimate_3d3d(pt1, pt2, R, t);
+    pose_estimation_3d3d(pt1, pt2, R, t);
 
     cout << "ICP via svd results:" << endl;
 

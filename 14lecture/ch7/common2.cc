@@ -38,13 +38,11 @@ using cv::recoverPose;
 using cv::findEssentialMat;
 
 
-
 void pose_estimation_3d3d (
     const vector<Point3f>& pts1,
     const vector<Point3f>& pts2,
     Mat& R, Mat& t
 ) {
-    
     Point3f p1, p2;
     int N = pts1.size();
     for(int i=0; i< N; i++) {
@@ -64,27 +62,27 @@ void pose_estimation_3d3d (
     }
 
 
-
     Eigen::Matrix3d W = Eigen::Matrix3d::Zero();
     
     for(int i=0;i<N; i++) {
-        W += Eigen::Vector3d(q1[i].x, q1[i].y, q1[i].z) *
-         Eigen::Vector3d(q2[i].x, q2[i].y, q2[i].z).transpose();
+        W += Eigen::Vector3d(q1[i].x, q1[i].y, q1[i].z) * Eigen::Vector3d(q2[i].x, q2[i].y, q2[i].z);
     }
-
-    
     cout << "W=" << W << endl;
-
 
     Eigen::JacobiSVD<Eigen::Matrix3d> svd(W, Eigen::ComputeFullU|Eigen::ComputeFullV);
     Eigen::Matrix3d U = svd.matrixU();
     Eigen::Matrix3d V = svd.matrixV();
 
 
+    if(U.determinant()< 0) {
+        
+        /*for(int x=9; x< 3; x++){
+            U(x,2) *= -1;
+        }*/
+    }
+
     cout << "U=" << U << endl;
     cout << "V=" << V << endl;
-
-  
 
     Eigen::Matrix3d R_ = U*(V.transpose());
 
@@ -99,11 +97,10 @@ void pose_estimation_3d3d (
         R_(2,0), R_(2,1), R_(2,2)
         );
 
-    t = (cv::Mat_<double>(3,1) << t_(0,0),t_(1,0),t_(2,0));
+    t = (cv::Mat_<double>(3,1) < t_(0,0),t_(1,0),t_(2,0));
 
 
 }
-
 
 
 class VertexPose : public g2o::BaseVertex<6, Sophus::SE3d> {
@@ -127,10 +124,9 @@ class VertexPose : public g2o::BaseVertex<6, Sophus::SE3d> {
     virtual bool write(ostream& out) const  override {
         return true;
     }
-    
+    private:
     
 };
-
 
 
 class EdgeProjectXYZRGBDPoseOnly : public g2o::BaseUnaryEdge<3, Eigen::Vector3d, VertexPose> {
@@ -165,14 +161,9 @@ class EdgeProjectXYZRGBDPoseOnly : public g2o::BaseUnaryEdge<3, Eigen::Vector3d,
 };
 
 
-
-
-
 void OptICP(const std::vector<cv::Point3f> pt1, 
                       const std::vector<cv::Point3f> pt2,
                       Mat& R, Mat& t) {
-
-                        
     //typedef g2o::BlockSolver<g2o::BlockSolverTraits<6,3>> Block;
     typedef g2o::BlockSolverX BlockSolverType;
     typedef g2o::LinearSolverDense<BlockSolverType::PoseMatrixType> LinearSolverType;
@@ -191,26 +182,26 @@ void OptICP(const std::vector<cv::Point3f> pt1,
 
 
     //vertex
-    VertexPose* pose = new VertexPose();
-    //g2o::VertexSE3Expmap* pose = new g2o::VertexSE3Expmap();
+    VertexPose * pose = new VertexPose();
     pose->setId(0);
     pose->setEstimate(Sophus::SE3d());
+    optimizer.addVertex(pose);
+
+    //g2o::VertexSE3Expmap* pose = new g2o::VertexSE3Expmap();
+    //pose->setId(0);
     //pose->setEstimate(g2o::SE3Quat(
     //    Eigen::Matrix3d::Identity(),
     //    Eigen::Vector3d(0,0,0)
     //));
-    optimizer.addVertex(pose);
 
     // edges
-    int index = 1;
-
-    vector<EdgeProjectXYZRGBDPoseOnly*> edges;
-    
+    //int index = 1;
+    //vector<EdgeProjectXYZRGBDPoseOnly*> edges;
     for (size_t i=0; i< pt1.size(); i++) {
         EdgeProjectXYZRGBDPoseOnly* edge = new EdgeProjectXYZRGBDPoseOnly(
             Eigen::Vector3d(pt2[i].x, pt2[i].y, pt2[i].z)
         );
-        edge->setId(index);
+        //edge->setId(index);
         edge->setVertex(0, pose);
         edge->setMeasurement(Eigen::Vector3d(
             pt1[i].x, pt1[i].y, pt1[i].z
@@ -218,15 +209,15 @@ void OptICP(const std::vector<cv::Point3f> pt1,
 
         edge->setInformation(Eigen::Matrix3d::Identity());
         optimizer.addEdge(edge);
-        index++;
-        edges.push_back(edge);
+        //index++;
+        //edges.push_back(edge);
     }
 
    
     optimizer.initializeOptimization();
     optimizer.optimize(10);
 
-    cout << "T=" << pose->estimate().matrix()<< endl;
+    cout << "T=" << pose->estimate().matrix() << endl;
 
     Eigen::Matrix3d R_  = pose->estimate().rotationMatrix();
     Eigen::Vector3d t_ = pose->estimate().translation();
@@ -236,10 +227,8 @@ void OptICP(const std::vector<cv::Point3f> pt1,
         R_(2,0), R_(2,1), R_(2,2)
         );
     t  = (cv::Mat_<double>(3,1)<< t_(0,0), t_(1,0), t_(2,0));
-    
+
 }
-
-
 
 void bundleAdjustment(const std::vector<cv::Point3f> pt_3d,
                       const std::vector<cv::Point2f> pt_2d,
@@ -344,7 +333,6 @@ void pose_estimate_2dn2d(const std::vector<cv::KeyPoint> kp1,
     recoverPose(essential, pt1, pt2, R, t, focal, principal_point);
 
 }
-
 
 void find_feature_matches( const Mat  & im1, const Mat & im2,
                             std::vector<KeyPoint> & kp1, std::vector<KeyPoint> & kp2,

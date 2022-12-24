@@ -45,7 +45,7 @@ cc_binary(
     name = "triangle",
     srcs = ["triangle.cc"],
     copts = [
-        "-std=c++14 -I/usr/include/opencv4 -D_GLIBCXX_USE_CXX11_ABI=1",
+        "-std=c++14 -I/usr/include/opencv4 -I/usr/include/eigen3  -D_GLIBCXX_USE_CXX11_ABI=1",
     ],
     linkopts= [
         "-lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_imgcodecs -ljpeg -lopencv_features2d",
@@ -60,10 +60,10 @@ cc_library(
     srcs = ["common.cc"],
     hdrs = ["common.h"],
     copts = [
-        "-std=c++14 -I/usr/include/opencv4 -D_GLIBCXX_USE_CXX11_ABI=1",
+        "-std=c++14 -I/usr/include/opencv4 -I/usr/include/eigen3 -I /usr/include/suitesparse -D_GLIBCXX_USE_CXX11_ABI=1",
     ],
     linkopts= [
-        "-lopencv_core -lopencv_highgui -lopencv_calib3d -lopencv_imgproc -lopencv_imgcodecs -ljpeg -lopencv_features2d ",
+        "-L /usr/local/lib -lg2o_core  -lcxsparse  -lg2o_csparse_extension -lg2o_stuff -lg2o_types_sba -lopencv_core -lopencv_highgui -lopencv_calib3d -lopencv_imgproc -lopencv_imgcodecs -ljpeg -lopencv_features2d ",
     ],
 )
 
@@ -90,7 +90,21 @@ cc_binary(
         "-std=c++14 -I/usr/include/opencv4 -D_GLIBCXX_USE_CXX11_ABI=1",
     ],
     linkopts= [
-        "-lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_imgcodecs -ljpeg -lopencv_features2d  /usr/local/lib -lg2o_core -lg2o_stuff",
+        "-lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_imgcodecs -ljpeg -lopencv_features2d  ",
+    ],
+    deps = [
+        ":common",
+    ]
+)
+
+cc_binary(
+    name = "est_3d3d",
+    srcs = ["pose_estimate_3d3d.cc"],
+    copts = [
+        "-std=c++14 -I/usr/include/opencv4 -D_GLIBCXX_USE_CXX11_ABI=1",
+    ],
+    linkopts= [
+        "-lopencv_core -lfmt -lopencv_highgui -lopencv_imgproc -lopencv_imgcodecs -ljpeg -lopencv_features2d  ",
     ],
     deps = [
         ":common",

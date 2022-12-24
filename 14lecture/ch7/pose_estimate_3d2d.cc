@@ -5,6 +5,7 @@ using std::cout;
 using std::endl;
 
 #include <opencv2/opencv.hpp>
+#include <opencv2/imgcodecs/legacy/constants_c.h>
 
 #include "common.h"
 
@@ -70,17 +71,6 @@ int main(int argc, char** argv) {
     cout << "t=" << t << endl;
 
     bundleAdjustment(pt_3d, pt_2d, k, R, t);
-
-
-
-
-
-
-
-
-
-
-
 
 
     return 0;
