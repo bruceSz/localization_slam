@@ -159,6 +159,71 @@ void OpticalFlowSingleLevel(
 }
 
 
+void OpticalFlowMultiLevel(
+    const Mat &im1,
+    const Mat &im2,
+    const vector<KeyPoint> & kp1,
+    vector<KeyPoint> & kp2,
+    vector<bool>  &success,
+    bool inverse ) {
+
+        int pyramids = 4;
+        double pyramid_scale = 0.5;
+        double scales[] = {1.0, 0.5, 0.25, 0.125};
+
+        // image pyramids
+        vector<Mat> pyr1, pyr2;
+
+        for(int i=0; i< pyramids; i++) {
+            if (i == 0) {
+                pyr1.push_back(im1);
+                pyr2.push_back(im2);
+            } else {
+                Mat im1_pyr, im2_pyr;
+                cv::resize(pyr1[i-1], im1_pyr, 
+                            cv::Size(pyr1[i-1].cols * pyramid_scale, pyr1[i-1].rows*pyramid_scale));
+                cv::resize(pyr2[i-1], im2_pyr,
+                            cv::Size(pyr2[i-1].cols * pyramid_scale, pyr2[i-1].rows* pyramid_scale));
+
+                pyr1.push_back(im1_pyr);
+                pyr2.push_back(im2_pyr);
+            }
+
+        }
+
+        // smallest kp in pyramid.
+        vector<KeyPoint> kp1_pyr, kp2_pyr;
+        for(auto & kp: kp1) {
+            auto kp_top = kp;
+            kp_top.pt *= scales[pyramids - 1];
+            kp1_pyr.push_back(kp_top);
+            kp1_pyr.push_back(kp_top);
+        }
+
+        for(int level = pyramids -1; level >= 0; level--) {
+            //from coarse to fine
+
+            success.clear();
+            OpticalFlowSingleLevel(pyr1[level], pyr2[level], kp1_pyr, kp2_pyr, success, inverse, true);
+
+            if (level > 0) {
+                for(auto &kp: kp1_pyr) {
+                    kp.pt /= pyramid_scale;
+                }
+                for(auto &kp: kp2_pyr) {
+                    kp.pt /= pyramid_scale;
+                }
+            }
+
+        }
+
+        for(auto & kp: kp2_pyr) {
+            kp2.push_back(kp);
+        }
+
+
+}
+
 int main(int argc, char** argv) {
     string file1 = "./LK1.png";
     string file2 = "./LK2.png";
