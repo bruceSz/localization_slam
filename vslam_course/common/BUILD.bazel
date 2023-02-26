@@ -1,0 +1,26 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+cc_binary(
+    name = "common_test",
+    srcs = ["common_test.cc"],
+    deps = [
+        ":cam_mgr",
+    ]
+)
+
+cc_library(
+    name  = "cam_mgr",
+    srcs = ["cam_mgr.cc"],
+    hdrs = ["cam_mgr.h"],
+)
+
+cc_library(
+    name = "camera",
+    srcs = ["camera.cc"],
+    hdrs = ["camera.h"]
+)
+
+cc_library(
+    name = "pose_util",
+    hdrs = ["pose.h"],
+)
