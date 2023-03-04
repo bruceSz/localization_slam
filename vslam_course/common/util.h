@@ -34,4 +34,13 @@ zs::Point3D transform(const zs::Point3D pt, const zs::Pose3D pose);
 
 cv::Mat merge(const std::vector<cv::Mat> imgs, int w, int h);
 
+
+std::string folder_and_slash(const std::string& folder) {
+    size_t len = folder.length();
+    if(len > 0 && folder[len-1] == != '/') {
+        return folder + "/";
+    }
+    return folder;
 }
+
+} // namespace of zs
