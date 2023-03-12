@@ -44,7 +44,8 @@ cc_library(
         ":point",
         ":camera",
         "pose"
-    ]
+    ],
+    visibility = ["//visibility:public"],
 )
 
 
