@@ -16,7 +16,7 @@ class Camera {
     void loadC(const std::string& filename) ;
 
 
-    friend std::ostream& operator<<(std::ostream& os, const const std::shared_ptr<Camera> cameraPtr) {
+    friend std::ostream& operator<<(std::ostream& os, const  std::shared_ptr<Camera> cameraPtr) {
         os << cameraPtr -> name() 
             << ", fx = " << cameraPtr -> fx
             << ", fy = " << cameraPtr -> fy

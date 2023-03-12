@@ -21,6 +21,35 @@ cc_library(
 )
 
 cc_library(
-    name = "pose_util",
+    name = "pose",
     hdrs = ["pose.h"],
+)
+
+cc_library(
+    name = "point",
+    srcs = ["point.h"],
+
+)
+
+
+
+cc_library(
+    name = "utils",
+    srcs = ["util.cc"],
+    hdrs = ["util.h"],
+    #copts = [
+    #    "-std=c++14 -I/usr/include/opencv4 -D_GLIBCXX_USE_CXX11_ABI=1",
+    #],
+    deps = [
+        ":point",
+        ":camera",
+        "pose"
+    ]
+)
+
+
+cc_binary(
+    name = "test",
+    srcs = ["test.cc"],
+
 )

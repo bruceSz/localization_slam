@@ -3,26 +3,26 @@
 namespace zs {
 
 template<class T>
-class Point2D {
+class _Point2D {
     public:
-    Point2D() = default;
-    Point2D(const T&x, const T& y):x(x), y(y) {}
-    ~Point2D() {}
+    _Point2D() = default;
+    _Point2D(const T&x, const T& y):x(x), y(y) {}
+    ~_Point2D() {}
     T x, y;
 };
 
 
 template<class T>
-class Point3D {
+class _Point3D {
 public:
-    Point3D() = default;
-    Point3D(const T&x, const T&y, const T& z):x(x), y(), z(z) {}
+    _Point3D() = default;
+    _Point3D(const T&x, const T&y, const T& z):x(x), y(), z(z) {}
 
     T x, y, z;
 };
 
-using Point2D = Point2D<double>;
-using Point3D = Point3D<double>;
-using Point2Df = Point2D<double>;
-using Point3Df = Point3D<double>;
+using Point2D = _Point2D<double>;
+using Point3D = _Point3D<double>;
+using Point2Df = _Point2D<float>;
+using Point3Df = _Point3D<float>;
 };
