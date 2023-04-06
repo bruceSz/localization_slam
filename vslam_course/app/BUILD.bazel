@@ -9,3 +9,14 @@ cc_binary(
     ]
 
 )
+
+cc_binary(
+    name = "harris_track",
+    srcs = ["harris_track.cc"],
+    deps = [
+        "//feature:harris_lib",
+         "//common:utils",
+         "//common:draw_utils",
+    ]
+    
+)

@@ -1,0 +1,14 @@
+cc_library(
+    name = "harris_lib",
+    srcs = [
+        "harris.cc",
+    ],
+    hdrs = [
+        "harris.h",
+        
+    ],
+    deps = [
+        "//common:utils"
+    ],
+    visibility = ["//visibility:public"],
+)

@@ -31,12 +31,23 @@ cc_library(
 
 )
 
+cc_library(
+    name = "draw_utils",
+    srcs =  ["draw_utils.cc" ],
+    hdrs = ["draw_utils.h"],
+    visibility = ["//visibility:public"],
+
+)
+
 
 
 cc_library(
     name = "utils",
     srcs = ["util.cc"],
-    hdrs = ["util.h"],
+    hdrs = [
+        "util.h",
+        "math_util.h"
+    ],
     #copts = [
     #    "-std=c++14 -I/usr/include/opencv4 -D_GLIBCXX_USE_CXX11_ABI=1",
     #],

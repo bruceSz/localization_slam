@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include "common/util.h"
+#include "feature/harris.h"
 
 namespace zs {
 
@@ -42,7 +43,7 @@ void HarrisTrack::run() {
             cv::Mat resp;
             std::vector<cv::Point2i> kps;
             std::vector<std::vector<uchar>> descs;
-            std::vectro<int> match_idx;
+            std::vector<int> match_idx;
             harris.detect(img, resp, 3, 9, 0.08);
             harris.getKeyPoints(resp, kps, 200, 8); 
             harris.getDescriptors(img, kps, descs, 9);

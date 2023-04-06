@@ -1,5 +1,7 @@
 
 #pragma once
+#include <opencv2/opencv.hpp>
+
 
 
 namespace zs {
@@ -55,6 +57,9 @@ public:
     void calcHarris(const cv::Mat& cov, cv::Mat& resp, const double k);
     
     void calcMinEigenVal(const cv::Mat& cov, cv::Mat& resp);
+
+    void match(const std::vector<std::vector<uchar>>& reference_desc, const std::vector<std::vector<uchar>>& query_desc, std::vector<int>& match_, const double lambda);
+    cv::Mat plotMatchOneImage(const cv::Mat& query, const std::vector<cv::Point2i>& reference_kps, const std::vector<cv::Point2i>& query_kps, const std::vector<int>& match_);
 
 };
 
