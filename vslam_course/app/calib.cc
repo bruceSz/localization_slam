@@ -1,6 +1,9 @@
 #include <string>
 
 #include "common/util.h"
+#include "common/cam_mgr.h"
+#include "common/draw_utils.h"
+#include "math/dlt.h"
 
 class Calib {
     public:
@@ -18,7 +21,7 @@ class Calib {
 
         float scale = 0.01f;
 
-        cv::Mat corners:
+        cv::Mat corners;
         fs["corners"] >> corners;
 
         world_pts_.resize(corners.rows, corners.cols);
@@ -29,11 +32,11 @@ class Calib {
             }
         }
 
-        std::string project_px_path = data_folder  + "detected_corners.txt";
+        std::string project_px_path = data_folder_  + "detected_corners.txt";
         corner_pxs_ = zs::load_matrix(project_px_path, 120, 24);
 
-        static zs::CameraPtr cam_ = std::shared_ptr<zs::Camera>(new zs::Camera(++camera_id, "default cam"));
-        cam_ -> loadConfig(conf_folder_ + "camera.yaml");
+        static zs::Camera::CameraPtr cam_ = std::shared_ptr<zs::Camera>(new zs::Camera(++camera_id, "default cam"));
+        cam_->loadC(conf_folder_ + "camera.yaml");
         zs::CameraMgr::GetInstance().addCamera(cam_);
 
     }
@@ -48,7 +51,7 @@ class Calib {
 
         
         try {
-            std::string img_file = data_folder + "images.txt";
+            std::string img_file = data_folder_ + "images.txt";
             std::ifstream fs(img_file.c_str());
             if(!fs.is_open()) {
                 std::cerr << " not found " << img_file << std::endl;
@@ -60,8 +63,8 @@ class Calib {
                 std::string img_path;
                 fs >> img_path ;
 
-                img_path = data_folder + "images/" + img_path;
-                cv::Mat img = cv::imgread(img_path, cv::IMREAD_GRAYSCALE);
+                img_path = data_folder_ + "images/" + img_path;
+                cv::Mat img = cv::imread(img_path, cv::IMREAD_GRAYSCALE);
 
 
                 Eigen::MatrixXd px_line = corner_pxs_.row(id++);
@@ -85,21 +88,21 @@ class Calib {
                 reproject_pxs.resize(world_pts_.rows(),2);
 
                 for(int i=0; i< world_pts_.size(); i++) {
-                    zs::Pose3D pt(world_pts_(i,0), world_pts_(i,1), world_pts_(i, 2));
-                    zs::Pose2D px = zs::project(pt, camera, pose);
+                    zs::Point3D pt(world_pts_(i,0), world_pts_(i,1), world_pts_(i, 2));
+                    zs::Point2D px = zs::project(pt, cam, pose);
                     reproject_pxs(i,0)= px.x;
-                    reproject_pxs(i,1) = py.y
+                    reproject_pxs(i,1) = px.y;
                 }
 
                 cv::Mat im1 = zs::drawPoint(img, pxs, zs::DrawType::CIRCLE, cv::Scalar(0,255,0));
-                cv::Mat im2 = zs::drawPoint(img1, reproject_pxs, zs::DrawType::X, cv::Scalar(0,0,255));
+                cv::Mat im2 = zs::drawPoint(im1, reproject_pxs, zs::DrawType::X, cv::Scalar(0,0,255));
                 cv::imshow("result", im2);
                 cv::waitKey(-1);
 
             }
             fs.close();
-        } catch (std::exception e) {
-            std::cerr << "failed to process image:" << e.waht() << std::endl;
+        } catch (std::exception& e) {
+            std::cerr << "failed to process image:" << e.what() << std::endl;
         }
 
     }
@@ -110,14 +113,14 @@ class Calib {
                 const Eigen::Matrix<double, Eigen::Dynamic, 2> pxs,
                 zs::Pose3D pose, 
                 Eigen::Matrix3d & cam_K) {
-        zs::DLT dtl(world_pts, pxs, cam_K );
+        zs::DLT dlt(world_pts, pxs, cam_K );
         dlt.run();
         pose = dlt.get_pose();
-        cam_K = dlt.get_cam_K();
+        cam_K = dlt.get_cam_k();
     }
 
-    std::string data_folder, conf_folder;
-    int cam_id;
+    std::string data_folder_, conf_folder_;
+    int camera_id = 0;
     Eigen::MatrixXd world_pts_;
     Eigen::MatrixXd corner_pxs_;
 };
@@ -131,7 +134,7 @@ int main(int argc, char** argv) {
     }
 
 
-    std::string dataF = zs::folder_and_slash(argv[1);
+    std::string dataF = zs::folder_and_slash(argv[1]);
     std::string confF = zs::folder_and_slash(argv[2]);
 
     Calib calib(dataF, confF);

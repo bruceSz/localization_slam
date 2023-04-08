@@ -3,6 +3,7 @@
 
 #include <string>
 #include <memory>
+#include <Eigen/Dense>
 
 #include <iostream>
 
@@ -36,11 +37,16 @@ class Camera {
         return name_;
     }
 
+    inline Eigen::Matrix3d K() {
+        return K_;
+    }
+
     double fx, fy, cx, cy, k1, k2;
 
   private:
     int id_;
     std::string name_;
+    Eigen::Matrix3d K_;
 public:
     using CameraPtr  = std::shared_ptr<Camera> ;
 };

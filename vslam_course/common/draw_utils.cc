@@ -5,7 +5,7 @@ namespace zs {
 
 
 cv::Mat drawPoint(const cv::Mat &img, const Eigen::Matrix<double,Eigen::Dynamic,2>& pxs, 
-                    DrawType type, , const cv::Scalar &color) {
+                    DrawType type, const cv::Scalar &color) {
     cv::Mat img_res(img.rows, img.cols, CV_8UC3);
     if (img.channels() == 1) {
         std::vector<cv::Mat> channels(3, img);
@@ -25,7 +25,7 @@ cv::Mat drawPoint(const cv::Mat &img, const Eigen::Matrix<double,Eigen::Dynamic,
 
         if (type == DrawType::CIRCLE) {
             cv::circle(img_res, cv::Point(x,y), 4, color);
-        } else if(  type == DrawType::LINE) {
+        } else if(  type == DrawType::POINT) {
             cv::circle(img_res, cv::Point(x,y), 2, color, -1);
         } else if (type == DrawType::X) {
             double x_l = x-3;
@@ -39,7 +39,7 @@ cv::Mat drawPoint(const cv::Mat &img, const Eigen::Matrix<double,Eigen::Dynamic,
             if (y_r >= img.rows) y_r = img.rows;
             cv::line(img_res, cv::Point(x_l,y_l), cv::Point(x_r,y_r), color);
             cv::line(img_res, cv::Point(x_l,y_r), cv::Point(x_r, y_l), color);
-        } else if( type == DrawType::Rect) {
+        } else if( type == DrawType::RECT) {
             double x_l = x-3;
             double x_r = x+3;
             double y_l = y-3;

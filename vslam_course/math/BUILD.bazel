@@ -1,0 +1,14 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "dlt",
+    srcs = ["dlt.cc"],
+    hdrs = [
+        "dlt.h",
+    ],
+    deps = [
+        "//common:pose"
+    ]
+)

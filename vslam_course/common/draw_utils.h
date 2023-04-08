@@ -3,13 +3,24 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/core.hpp>
 
+#include <eigen3/Eigen/Core>
+
 namespace zs {
 
+enum class DrawType : u_int8_t
+{
+    NONETYPE,
+    CIRCLE,
+    POINT,
+    X,
+    RECT
+};
+
 cv::Mat drawPoint(const cv::Mat &img, const Eigen::Matrix<double,Eigen::Dynamic,2>& pxs, 
-                    DrawType type, , const cv::Scalar &color);
+                    DrawType type,  const cv::Scalar &color);
 
 template<class PointType>
-cv::Mat drawPoint(const cv:Mat& img, const std::vector<PointType>& pxs, DrawType type, const cv::Scala& color) {
+cv::Mat drawPoint(const cv::Mat& img, const std::vector<PointType>& pxs, DrawType type, const cv::Scalar& color) {
     cv::Mat img_res(img.rows, img.cols, CV_8UC3);
     if (img.channels() == 1) {
         std::vector<cv::Mat> channels(3, img);

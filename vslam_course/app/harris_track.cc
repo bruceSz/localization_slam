@@ -1,7 +1,12 @@
 #include <iostream>
 #include <vector>
 #include "common/util.h"
+#include "common/draw_utils.h"
 #include "feature/harris.h"
+
+//#include <eigen3/Eigen/SVD>
+#include <Eigen/SVD>  
+#include <Eigen/Dense>  
 
 namespace zs {
 
@@ -57,7 +62,7 @@ void HarrisTrack::run() {
             last_frame_descs = descs;
             last_frame_kps = kps;
 
-            cv::Mat kp_img = zs::drawPoint<cv::Point2i>(resp, kps, zs::DrawType::CIRCLE, cv::Scalar(0,0,255));
+            cv::Mat kp_img = zs::drawPoint<cv::Point2i>(resp, kps, zs::DrawType::CIRCLE, cv::Scalar(0,255,255));
             std::vector<cv::Mat> merged_imgs;
 
             if(match_img.empty()) {
@@ -74,18 +79,37 @@ void HarrisTrack::run() {
             cv::waitKey(30);
         }
         fs.close();
-    } catch(std::exception e) {
+    } catch(std::exception& e) {
         std::cerr << "image process exception: " << e.what() << std::endl;
     }
 }
 
 } // namespace zs
 
+int example_jacobi() {  
+    Eigen::Matrix3d A;  
+    A(0,0)=1,A(0,1)=0,A(0,2)=1;  
+    A(1,0)=0,A(1,1)=1,A(1,2)=1;  
+    A(2,0)=0,A(2,1)=0,A(2,2)=0;  
+    Eigen::JacobiSVD<Eigen::MatrixXd> svd(A, Eigen::ComputeThinU | Eigen::ComputeThinV );  
+    Eigen::MatrixXd V = svd.matrixV(), U = svd.matrixU();  
+    Eigen::MatrixXd  S = U.inverse() * A * V.transpose().inverse(); // S = U^-1 * A * VT * -1  
+    std::cout<<"A :\n"<<A<<std::endl;  
+    std::cout<<"U :\n"<<U<<std::endl;  
+    std::cout<<"S :\n"<<S<<std::endl;  
+    std::cout<<"V :\n"<<V<<std::endl;  
+    std::cout<<"U * S * VT :\n"<<U * S * V.transpose()<<std::endl;  
+    system("pause");  
+    return 0;  
+}
+
 int main(int argc, char** argv) {
-    int (argc != 2) {
+    if (argc != 2) {
         std::cout << "usage: " << argv[0] << std::endl;
         return 0;
     }
+    //example_jacobi();
+
 
     std::string data_folder = zs::folder_and_slash(argv[1]);
     zs::HarrisTrack ht(data_folder);

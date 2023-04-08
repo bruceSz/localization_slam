@@ -86,7 +86,7 @@ void Harris::calcHarris(const cv::Mat& cov, cv::Mat& resp, const double k) {
 *    Ix^2, Ix*Iy , Iy^2
 * @param resp
 */
-void calcMinEigenVal(const cv::Mat& cov, cv::Mat& resp) {
+void Harris::calcMinEigenVal(const cv::Mat& cov, cv::Mat& resp) {
     cv::Size sz = cov.size();
     resp = cv::Mat::zeros(sz, resp.type());
     if(cov.isContinuous() && resp.isContinuous()) {
@@ -108,8 +108,8 @@ void calcMinEigenVal(const cv::Mat& cov, cv::Mat& resp) {
     }
 }
 
-void getKeyPoints(const cv::Mat& resp, std::vector<cv::Point2i>& kps, 
-                    const double resp_threshold, const int nms_sup_radius = 8) {
+void Harris::getKeyPoints(const cv::Mat& resp, std::vector<cv::Point2i>& kps, 
+                    const double resp_threshold, const int nms_sup_radius ) {
     cv::Mat _resp = resp.clone();
     // current max resp value in current round.
     double curr_resp = 0.f;
@@ -187,7 +187,7 @@ cv::Mat Harris::plotMatchOneImage(const cv::Mat& query, const std::vector<cv::Po
  }
 
 
-void getDescriptors(const cv::Mat& src, const std::vector<cv::Point2i>& kps, 
+void Harris::getDescriptors(const cv::Mat& src, const std::vector<cv::Point2i>& kps, 
                     std::vector<std::vector<uchar>>& descs, const int r) {
     int num_kps = kps.size();
     descs.clear();

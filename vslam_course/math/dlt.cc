@@ -6,7 +6,7 @@
 
 namespace zs {
 DLT::DLT(const Eigen::Matrix<double, Eigen::Dynamic, 3>& world_pts,
-        const Eigen::Matrix<double, Eigen::Dynamic,2>& pxs) {
+        const Eigen::Matrix<double, Eigen::Dynamic, 2>& pxs) {
     world_pts_ =  world_pts;
     pxs_ = pxs;
     camera_k_ = Eigen::Matrix3d::Zero();
@@ -44,19 +44,34 @@ void DLT::run() {
 
 // reference: https://zhuanlan.zhihu.com/p/58648937
 Pose3D DLT::poseFromM(const Eigen::Matrix<double, 3, 4> M) {
-    Eigen::Matrix3d R = M.block(0,0,3,3);
-    Eigen::JacobiSVD<Eigen:::MatrixXd> svd(R, Eigen::ComputeThinU|Eigen::ComputeThinV);
-    Eigen::MatrixXd U, S, V;
-    U = svd.matrixU();
-    V = svd.matrixV();
-    S = svd.singularValues();
+
+    Eigen::Matrix3d R = M.block(0, 0, 3, 3);
+    /* A(0,0)=1,A(0,1)=0,A(0,2)=1;  
+    A(1,0)=0,A(1,1)=1,A(1,2)=1;  
+    A(2,0)=0,A(2,1)=0,A(2,2)=0;   */
+    Eigen::JacobiSVD<Eigen::MatrixXd> svd(R, Eigen::ComputeThinU | Eigen::ComputeThinV );  
+    Eigen::MatrixXd V = svd.matrixV(), U = svd.matrixU();  
+    Eigen::MatrixXd S = svd.singularValues();
 
     double d0 = R.norm();
     R = U * V.transpose();
 
     double alpha = R.norm() / d0;
     Eigen::Vector3d t = M.block(0,3,3,1);
-    t *= alpha;
+    t *= alpha; 
+
+    //Eigen::MatrixXd  S = U.inverse() * A * V.transpose().inverse();
+    /* Eigen::Matrix3d R = M.block(0,0,3,3);
+    
+    Eigen::MatrixXd S;
+    Eigen::MatrixXd V;
+    Eigen::JacobiSVD<Eigen:::MatrixXd> svd1(R, Eigen::ComputeThinU|Eigen::ComputeThinV);
+    
+    Eigen::MatrixXd U = svd1.matrixU();
+    Eigen::MatrixXd V = svd1.matrixV();
+    Eigen::MatrixXd S = svd1.singularValues();
+
+    */
 
     return Pose3D(R, t);
 }
@@ -89,8 +104,8 @@ void DLT::decompM(const Eigen::Matrix<double, 3, 4> M, Pose3D& pose, Eigen::Matr
 
     Eigen::Vector3d Kt = M.block(0,3,3,1);
     Eigen::Vector3d t = K.inverse() * Kt;
-    pose.R = Q;
-    pose.t = t;
+    pose.R_ = Q;
+    pose.t_ = t;
 }
 
 Eigen::Matrix<double,3,4> DLT::getM(const Eigen::Matrix<double, Eigen::Dynamic, 12>& Q) {
@@ -136,7 +151,7 @@ Eigen::Matrix<double, Eigen::Dynamic, 12> DLT::makeQ() {
     } else {
         for(int i=0; i< pt_num_; i++) {
             // normalized plane.
-            Eigen::Vector3d inverse_k_px = camera_k_.inverse() * Eigen::Vector3d(pxs(i,0), pxs(i,1), 1);
+            Eigen::Vector3d inverse_k_px = camera_k_.inverse() * Eigen::Vector3d(pxs_(i,0), pxs_(i,1), 1);
             Eigen::Matrix<double, 12, 1> row;
 
             row << world_pts_(i,0) , world_pts_(i,1), world_pts_(i,2), 1,

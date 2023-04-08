@@ -20,7 +20,7 @@ public:
 
     void addCamera(Camera::CameraPtr& cam);
 
-    Camera::CameraPtr getCameraById(int id);
+    Camera::CameraPtr getCameraById(int id)  ;
 
 private:
     CameraMgr();
@@ -30,4 +30,5 @@ private:
 
     std::map<int, Camera::CameraPtr> camera_ids_;
 
-}
+};
+} // namespace zs

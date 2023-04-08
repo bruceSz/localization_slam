@@ -27,6 +27,10 @@ void Camera::loadC(const std::string& filename) {
     n = fs["camera"]["distortion"];
     k1 = static_cast<float>(n["k1"]);
     k2 = static_cast<float>(n["k2"]);
+
+    K_ << fx, 0.0, cx, 
+        0.0, fy, cy,
+         0.0, 0.0, 1.0;
 }
 
 }

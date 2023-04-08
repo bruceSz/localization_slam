@@ -1,6 +1,8 @@
 #include "util.h"
 #include "camera.h"
 
+#include <Eigen/Core>
+#include <Eigen/LU>
 namespace zs {
 
 /**
@@ -115,7 +117,7 @@ zs::Point3D transform(const zs::Point3D pt, zs::Pose3D pose) {
     return zs::Point3D(p_dst(0), p_dst(1), p_dst(2));
 }
 
-cv::Mat mergeImage(const std::vector<cv::Mat> imgs, int w, int h) {
+cv::Mat mergeImage(const std::vector<cv::Mat>& imgs, int w, int h) {
     int n = (int)imgs.size();
     int merge_w, merge_h;
     if(n <= 3) {
@@ -160,5 +162,26 @@ cv::Mat mergeImage(const std::vector<cv::Mat> imgs, int w, int h) {
     return merge_img;
 
 }
+
+
+Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> load_matrix(const std::string& file, int row, int col) {
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> mat;
+    mat.resize(row, col);
+
+    std::ifstream fs(file.c_str());
+    if (!fs.is_open()) {
+        std::cerr << "failed to load file: " << file << std::endl;
+        return mat;
+    }
+
+    for(int r =0; r< row; r++) {
+        for(int c = 0; c< col; c++) {
+            fs >> mat(r, c);
+        }
+    }
+
+    return mat;
+}
+
 
 }

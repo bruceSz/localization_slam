@@ -2,9 +2,11 @@
 
 #include "common/pose.h"
 
-#include <eigen3/Eigen/Core>
-#include <eigen3/Eigen/SVD>
-#include <eigen3/Eigen/Cholesky>
+#include <Eigen/Core>
+#include <Eigen/SVD>
+#include <Eigen/Cholesky>
+
+#include <Eigen/Dense> 
 // L * L^*
 
 namespace zs {
@@ -14,7 +16,7 @@ class DLT {
     DLT(const Eigen::Matrix<double, Eigen::Dynamic, 3>& world_pts, 
         const Eigen::Matrix<double, Eigen::Dynamic, 2>& pxs);
 
-    DLT(const Eigen::Matrix<double, Eigen::Dynamic,3> world_pts, 
+    DLT(const Eigen::Matrix<double, Eigen::Dynamic,3>& world_pts, 
         const Eigen::Matrix<double, Eigen::Dynamic,2>& pxs, 
         const Eigen::Matrix3d& cam_k);
 
@@ -28,7 +30,7 @@ class DLT {
     }
 
     Eigen::Matrix3d get_cam_k() {
-        return cam_k;
+        return camera_k_;
     }
 
 

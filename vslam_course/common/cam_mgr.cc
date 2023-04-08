@@ -12,7 +12,7 @@ CameraMgr& CameraMgr::operator=(const CameraMgr& other) {
     return *this;
 }
 
-void CameraMgr::addCamera(Camera::CameraPtr cam) {
+void CameraMgr::addCamera(Camera::CameraPtr& cam) {
     if (camera_ids_.find(cam->id()) != camera_ids_.end()) {
         camera_ids_[cam->id()] = cam;
     } else {
@@ -20,7 +20,7 @@ void CameraMgr::addCamera(Camera::CameraPtr cam) {
     }
 }
 
-Camera::CameraPtr CameraMgr::getCameraById(int id) const {
+Camera::CameraPtr CameraMgr::getCameraById(int id)  {
     if (camera_ids_.find(id) != camera_ids_.end()) {
         return camera_ids_[id];
     }

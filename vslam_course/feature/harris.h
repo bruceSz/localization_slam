@@ -14,8 +14,8 @@ public:
         MINEIGENVAL
     };
 
-    Harris();
-    ~Harris();
+    Harris() = default;
+    ~Harris() = default;
 
     /**
      * 

@@ -9,6 +9,7 @@ class _Pose3D {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
+    _Pose3D() = default;
     _Pose3D( const PoseDType& wx, 
             const PoseDType& wy, 
             const PoseDType& wz,
@@ -16,6 +17,12 @@ public:
             const PoseDType& ty,
             const PoseDType& tz) : wx(wx), wy(wy), wz(wz), tx(tx), ty(ty), tz(tz) {}
 
+    _Pose3D(const Eigen::Matrix<PoseDType, 3,3>& R, 
+            const Eigen::Matrix<PoseDType, 3,1>& t) : R_(R), t_(t) {
+                tx = t(0);
+                ty = t(1);
+                tz = t(2);
+            }
     ~_Pose3D() {}
 
     _Pose3D& operator=(const _Pose3D& rhs) {
@@ -60,6 +67,9 @@ public:
 
 private:
     PoseDType wx, wy, wz, tx, ty, tz;
+public:
+    Eigen::Matrix<PoseDType, 3,3> R_;
+    Eigen::Matrix<PoseDType, 3,1> t_;
 };
 
 using Pose3D  = _Pose3D<double>;
