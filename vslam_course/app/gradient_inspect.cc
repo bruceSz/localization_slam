@@ -3,8 +3,9 @@
 #include <istream>
 #include <iterator>
 #include <filesystem>
+#include <experimental/filesystem>
 
-
+namespace fs = std::experimental::filesystem;
 #include "common/util.h"
 
 
@@ -49,7 +50,7 @@ void print_flist(std::string path) {
             CHECK(std::filesystem::exists(img_path), " file not found");
 
 
-            cv::Mat img = cv::imread(img_path, cv::IMREAD_GRAYSCALE);
+            cv::Mat img = cv::imread(img_path.generic_string(), cv::IMREAD_GRAYSCALE);
              cv::Mat dx, dy;
             cv::Sobel(img, dx, CV_32F, 1, 0, 3);
             cv::Sobel(img, dy, CV_32F, 0, 1, 3);

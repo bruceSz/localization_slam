@@ -12,3 +12,15 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
 )
+
+cc_library(
+    name = "sift_lib", 
+    srcs = [
+        "sift.cc",
+    ],
+    hdrs = [
+        "sift.h",
+    ]
+    
+
+)
