@@ -13,6 +13,16 @@ Sift::Sift(int nfts, int octaves, int octave_scales, int contrast_threshold,
 
 Sift::~Sift() {}
 
+cv::Mat Sift::createInitialImage(const cv::Mat& img) {
+    cv::Mat upper_img, base;
+    cv::resize(img, upper_img, cv::Size(img.cols*2, img.rows*2) , 0, 0, cv::INTER_LINEAR);
+    float sig_diff = std::pow(std::max(sigma_ * sigma_ - 0.5*0.5 * 4, 0.01 ), 0.5);
+    std::cout << "sig_diff: " << sig_diff << std::endl;
+
+    cv::GaussianBlur(upper_img, base, cv::Size(), sig_diff, sig_diff);
+    return base;
+}
+
 
 void Sift::detect(const cv::Mat& src, std::vector<cv::KeyPoint>& kps,
               std::vector<std::vector<float>> descs) {
@@ -62,8 +72,18 @@ void Sift::buildGaussianPyramid(const cv::Mat& base, std::vector<cv::Mat>& pyr) 
 }
 
 void Sift::buildDogPyramid(const std::vector<cv::Mat>& gaussian_pyr, std::vector<cv::Mat>& dog_pyr) {
+    dog_pyr.clear();
+    dog_pyr.resize(octaves_ * (octave_scales_ + 2));
+    for(int idx = 0; idex < int(dog_pyr.size()); idx++) {
+       int o = idx/(octave_scales_ + 2);
+       int i = idx%(octave_scales_ + 2);
 
-
+       const cv::Mat& src1 = gaussian_pyr[o* (octave_scales_ + 3) + i];
+       const cv::Mat& src2 = gaussian_pyr[o* (octave_scales_ + 3) + i + 1];
+       cv::Mat& dst = dog_pyr[idx];
+       cv::substract(src2, src1, dst, cv::noArray());
+       cv::normalize(dst, dst, 0, 255, cv::NORM_MINMAX);
+    }
 }
 
 }  // namespace zs
