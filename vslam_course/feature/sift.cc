@@ -86,4 +86,108 @@ void Sift::buildDogPyramid(const std::vector<cv::Mat>& gaussian_pyr, std::vector
     }
 }
 
+bool isNearByExtrema(const cv::Mat& mat, int r, int c, float v) {
+    CHECK(r >= 1 && c >= 1 && r < mat.rows-1 && c < mat.cols -1);
+    //float val = mat.at<float>(r, c);
+    
+    float _00, _01, _02;
+    float _10,    , _12;
+    float _20, _21, _22;
+
+    _00 = img.at<float>(r-1, c-1); _01 = img.at<float>(r-1, c); _02 = img.at<float>(r-1,c+1);
+    _10 = img.at<float>(r, c-1);                                _12 = img.at<float>(r,c+1);
+    _20 = img.at<float>(r+1, c-1); _21 = img.at<float>(r+1, c); _22 = img.at<float>(r+1,c+1);
+
+    std::vector<float> near_dog = {_00, _01, _02, _10,  _12, _20, _21, _22};
+
+    float vmax = std::max_element(near_dog.begin(), near_dog.end());
+    float vmin = std::min_element(near_dog.begin(), near_dog.end());
+
+    if (v > 0 && v > vmax) {
+        return true;
+    }
+
+    if (v < 0 && v < vmin) {
+        return true;
+    }
+
+    return false;
+}
+
+
+void Sift::findScaleSpaceExtrema(const std::vector<cv::Mat>& dog_pyr, std::vector<cv::KeyPoint> & keypoints) {
+    int border = 8;
+    for(int o=0; o < octaves_; o++) {
+        for(int i=0; i < octave_scales_; i++) {
+            int idx = o * (octave_scales_ + 2) + i;
+            const cv::Mat& img = dog_pyr[idx];
+            const cv::Mat& prev = dog_pyr[idx-1];
+            const cv::Mat& next = dog_pyr[idx+1];
+
+            for(int r=border; r < img.rows-border; r++) {
+                for(int c = border; c< img.cols-border; c++) {
+                    float val = img.at<float>(r, c);
+                    if(std::abs(val) < contrast_threshold_) {
+                        continue;
+                    }
+                    bool valid = false;
+                    // is extrema at current scale.
+                    if (isNearByExtrema(img, r, c, val)) {
+                        // is extrema at previous scale. (higher resolution/scale)
+                        if (isNearByExtrema(prev, r, c, val)) {
+                            // is extrema at next scale. (lower resolution/scale)
+                            if (isNearByExtrema(next, r, c, val)) {
+                                float prev_v = prev.at<float>(r, c);
+                                float next_v = next.at<float>(r, c);
+                                if ( v> 0) {
+                                    valid = (val >= std::max(prev_v, next_v));
+                                } else {
+                                    valid = (val <= std::min(prev_v, next_v));
+                                }
+                            }
+                        }
+                    }
+                    if (valid) {
+                        cv::KeyPoint kpt;
+                        // transform coordinates to bottom of the pyramid.
+                        kpt.pt.x = c * (1 << o);
+                        kpt.pt.y = r * (1 << o);
+                        // figure it out
+                        kpt.octave = o + (i <<8);
+                        kpt.response = val;
+                        kpt.size = sigma_ * powf(2.f, i/octave_scales_) * (1 << o) * 2;
+                        keypoints.push_back(cv::KeyPoint(r, c, val));
+                    }
+                }
+            }
+        }
+    }
+}
+
+void retainBest(std::vector<cv::KeyPoint>& kpts, int n_pts ) {
+    if ( n_pts >=0 && n_pts < kpts.size() ) {
+        if (n_pts ==0) {
+            kpts.clear();
+            return;
+        }
+
+        std::nth_element(kpts.begin(), kpts.begin() + n_pts-1, kpts.end(), KeyPointResponseCompare());
+        float threshold_val = kpts[n_pts-1].response;
+       // get those with equal response (compared with threshold)
+        std::vector<cv::KeyPoint>::const_iterator new_end = std::partition(kpts.begin() + n_pts, kpts.end(), KeypointResponseGreaterThanOrEqual(threshold_val));
+        kps.resize(new_end - kpts.begin());
+    }
+}
+
+
+void Sift::resumeScale(std:vector<cv::KeyPoint>& kpts) {
+    for(size_t i = 0; i < kpts.size(); i++) {
+        cv::KeyPoint& kpt = kpts[i];
+        float scale = 0.5;
+
+        kpt.pt *= scale;
+        kpt.size *= scale;
+    }
+}
+
 }  // namespace zs

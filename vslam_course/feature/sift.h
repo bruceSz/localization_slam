@@ -17,6 +17,26 @@
 
 namespace zs {
 
+struct KeyPointResponseCompare {
+  inline bool operator()(const cv::KeyPoint& kp1,
+                         const cv::KeyPoint& kp2) const {
+    return kp1.response > kp2.response;
+  }
+};
+
+struct KeypointResponseGreaterThanOrEqualToThreshold
+{
+    KeypointResponseGreaterThanOrEqualToThreshold(float _value) :
+    value(_value)
+    {
+    }
+    inline bool operator()(const cv::KeyPoint& kpt) const
+    {
+        return kpt.response >= value;
+    }
+    float value;
+};
+
 class Sift {
  public:
   /**
@@ -70,14 +90,17 @@ class Sift {
   void resumeScale(std::vector<cv::KeyPoint>& kps);
 
   void calcDescriptrs(const std::vector<cv::Mat>& gaussian_pyr,
-                      const std::vector<cv::KeyPoint>& kps, 
+                      const std::vector<cv::KeyPoint>& kps,
                       std::vector<std::vector<float>>& descs);
 
-  void calcPatchDescriptors(const cv::Mat& patch_norm, const cv::Mat& path_dir, std::vector<float>& desc);
+  void calcPatchDescriptors(const cv::Mat& patch_norm, const cv::Mat& path_dir,
+                            std::vector<float>& desc);
 
-  void calcCellHog(const cv::Mat& cell_norm, const cv::Mat& cell_dir, std::vector<float>& hog);
+  void calcCellHog(const cv::Mat& cell_norm, const cv::Mat& cell_dir,
+                   std::vector<float>& hog);
 
-  void plotPyramid(const std::vector<cv::Mat>& pyr, int width, int height, int n, const std::string& save_path, bool to_save);
+  void plotPyramid(const std::vector<cv::Mat>& pyr, int width, int height,
+                   int n, const std::string& save_path, bool to_save);
 
   int nfts_;
 
