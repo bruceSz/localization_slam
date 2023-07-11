@@ -33,3 +33,16 @@ cc_binary(
     ]
 
 )
+
+
+cc_binary(
+    name = "sift_match",
+    srcs = [
+        "sift_match.cc",
+    ],
+    deps = [
+        "//common:utils",
+        "//feature:sift_lib",
+    ]
+
+)

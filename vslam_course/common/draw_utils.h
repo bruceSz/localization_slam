@@ -19,6 +19,28 @@ enum class DrawType : u_int8_t
 cv::Mat drawPoint(const cv::Mat &img, const Eigen::Matrix<double,Eigen::Dynamic,2>& pxs, 
                     DrawType type,  const cv::Scalar &color);
 
+cv::Mat drawKeyPoint(const cv::Mat img, const std::vector<cv::KeyPoint>& kps, const cv::Scalar& color) {
+    cv::Mat img_res(img.rows, img.cols, CV_8UC3);
+    if (img.channels() == 1) {
+        std::vector<cv::Mat> channels(3, img);
+        cv::merge(channels, img_res);
+    } else {
+        img.copyTo(img_res);
+    }
+
+    for(int i=0; i< kps.size(); i++) {
+        double x = kps[i].pt.x;
+        double y = kps[i].pt.y;
+
+        if (x< 0 || x>img.cols || y< 0 || y>img.rows) {
+            continue;
+        }
+
+        cv::circle(img_res, cv::Point(x,y), kps[i].size, color, -1);
+    }
+    return img_res;
+}
+
 template<class PointType>
 cv::Mat drawPoint(const cv::Mat& img, const std::vector<PointType>& pxs, DrawType type, const cv::Scalar& color) {
     cv::Mat img_res(img.rows, img.cols, CV_8UC3);

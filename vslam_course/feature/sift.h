@@ -24,9 +24,9 @@ struct KeyPointResponseCompare {
   }
 };
 
-struct KeypointResponseGreaterThanOrEqualToThreshold
+struct KeypointResponseGreaterThanOrEqual
 {
-    KeypointResponseGreaterThanOrEqualToThreshold(float _value) :
+    KeypointResponseGreaterThanOrEqual(float _value) :
     value(_value)
     {
     }
@@ -66,15 +66,22 @@ class Sift {
   void plotMatchImages(const cv::Mat& ref_img, const cv::Mat& query_img,
                        const std::vector<int>& match,
                        const std::string& saved_path, bool to_save);
+  void plotMatchTwoImage(const cv::Mat& reference_img, const cv::Mat& query_img, 
+      const std::vector<cv::KeyPoint>& reference_kps, const std::vector<cv::KeyPoint>& query_kps,
+       const std::vector<int>& match, const std::string& saved_path, bool saved);                     
 
-  void plotGaussignPyramid(const std::string& saved_path, bool to_save);
+  void plotGaussianPyramid(const std::string& saved_path, bool to_save);
 
   void plotDogPyramid(const std::string& saved_path, bool to_save);
+  
 
-  void plotKeypoints(const std::string& saved_path,
-                     std::vector<cv::KeyPoint>& kps, bool to_save);
+  void plotKeypoints(const cv::Mat& src,
+                     std::vector<cv::KeyPoint>& kps, const std::string& saved_path ,bool to_save);
 
  private:
+
+
+  bool isNearByExtrema(const cv::Mat& mat, int r, int c, float v);
   void buildGaussianPyramid(const cv::Mat& base, std::vector<cv::Mat>& pyramid);
 
   cv::Mat credateInitImage(const cv::Mat& base);
@@ -83,7 +90,7 @@ class Sift {
                        std::vector<cv::Mat>& dog_pyr);
 
   void findScaleSpaceExtrema(const std::vector<cv::Mat>& dog_pyr,
-                             std::vector<cv::KeyPoint> kps);
+                             std::vector<cv::KeyPoint>& kps);
 
   void retainBest(std::vector<cv::KeyPoint>& kps, int n_points);
 
@@ -93,14 +100,16 @@ class Sift {
                       const std::vector<cv::KeyPoint>& kps,
                       std::vector<std::vector<float>>& descs);
 
-  void calcPatchDescriptors(const cv::Mat& patch_norm, const cv::Mat& path_dir,
-                            std::vector<float>& desc);
-
+  
+  void calcPatchDesc(const cv::Mat& patch_norm, const cv::Mat& patch_dir,
+                         std::vector<float>& desc);
   void calcCellHog(const cv::Mat& cell_norm, const cv::Mat& cell_dir,
                    std::vector<float>& hog);
 
   void plotPyramid(const std::vector<cv::Mat>& pyr, int width, int height,
                    int n, const std::string& save_path, bool to_save);
+  // void plotPyramid(const std::vector<cv::Mat>& pyr, int width, int height, 
+  //                 int n, const std::string& saved_path, bool to_save) ;
 
   int nfts_;
 

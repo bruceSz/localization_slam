@@ -4,8 +4,8 @@
 #include <opencv2/opencv.hpp>
 
 #include "feature/sift.h"
-#include "common/string_util.h"
-#include "common/image_util.h"
+#include "common/util.h"
+
 
 namespace zs {
 
@@ -26,24 +26,24 @@ void SiftMatch::run() {
         cv::Mat image = cv::imread(data_folder_ + "image1.jpg",cv::IMREAD_GRAYSCALE);
         cv::Mat image2 = cv::imread(data_folder_ + "image2.jpg",cv::IMREAD_GRAYSCALE);
         
-        std:::vector<cv::KeyPoint> kp_ref;
-        std::vector<cv::vector<float>> desc_ref;
+        std::vector<cv::KeyPoint> kp_ref;
+        std::vector<std::vector<float>> desc_ref;
 
-        sfit.detect(image, kp_ref, desc_ref);
-        sift.plotGaussignPyramid("./output/gaussian_pyr_ref.png", true);
+        sift.detect(image, kp_ref, desc_ref);
+        sift.plotGaussianPyramid("./output/gaussian_pyr_ref.png", true);
         sift.plotDogPyramid("./output/dog_pyr_ref.png", true);
-        sfit.plotKeypoints(image,  kp_ref,"./output/keypoints_ref.png", true);
+        sift.plotKeypoints(image,  kp_ref,"./output/keypoints_ref.png", true);
 
         std::vector<cv::KeyPoint> kp_query;
         std::vector<std::vector<float>> desc_query;
         sift.detect(image2, kp_query, desc_query);
-        sift.plotGaussignPyramid("./output/gaussian_pyr_query.png", true);
+        sift.plotGaussianPyramid("./output/gaussian_pyr_query.png", true);
         sift.plotDogPyramid("./output/dog_pyr_query.png", true);
         sift.plotKeypoints(image2, kp_query ,"./output/keypoints_query.png", true);
 
         std::vector<int> match_idx;
         sift.match(desc_ref, desc_query, match_idx);
-        sft.plotMatchTwoImage(image1, image2, kp_ref, kp_query, match_idx, "./output/match_two_image.png", true);
+        sift.plotMatchTwoImage(image, image2, kp_ref, kp_query, match_idx, "./output/match_two_image.png", true);
 
     } catch (std::exception &e) {
         std::cerr << e.what() << std::endl;

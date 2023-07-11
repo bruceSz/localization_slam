@@ -2,9 +2,13 @@
 #include <string>
 #include <vector>
 #include <opencv2/opencv.hpp>
+#include <Eigen/Core>
+#include <Eigen/Cholesky>
 
 using std::string;
 using std::vector;
+using std::cout;
+using std::endl;
 
 using cv::Mat;
 using cv::imread;
@@ -25,10 +29,10 @@ class OpticalFlowTracker {
                         vector<KeyPoint>& kp2,
                         vector<bool> & succ,
                         bool inverse = true, bool has_init = false) :
-                        im1(im1), im2(im2), kp1(kp1), succ(succ), inverse(inverse),
+                        im1(im1), im2(im2), kp1(kp1), success(succ), inverse(inverse),
                          has_init(has_init){}
 
-    void calculateOpticalFlow(cosnt Range& range);
+    void calculateOpticalFlow(const Range& range);
     private:
     const Mat& im1;
     const Mat& im2;
@@ -36,9 +40,20 @@ class OpticalFlowTracker {
     vector<KeyPoint> kp2;
     vector<bool> success;
     bool inverse = true;    
-    bool has_init = false
+    bool has_init = false;
 };
 
+inline float GetPixelValue(const cv::Mat &img, float x, float y) {
+    uchar* data = &img.data[int(y) * img.step + int(x)];
+    float xx =  x- floor(x);
+    float yy = y - floor(y);
+    return float(
+        (1-xx) * (1-yy) * data[0] + 
+        xx * (1-yy) * data[1] + 
+        (1-xx) * yy * data[img.step] +
+         xx * yy + data[img.step+1]   
+     );
+}
 
 void OpticalFlowTracker::calculateOpticalFlow(const Range& range) {
 
@@ -46,12 +61,12 @@ void OpticalFlowTracker::calculateOpticalFlow(const Range& range) {
     int half_patch_size = 4;
     int iterations = 10;
 
-    for(size_t i = range.start; i< range.end; i++) {
+    for(size_t i = range.start; i< (size_t)range.end; i++) {
         auto kp = kp1[i];
         double dx = 0, dy = 0;
         if (has_init) {
             dx = kp2[i].pt.x - kp.pt.x;
-            dy = kp2[i].py.y - kp.pt.y;
+            dy = kp2[i].pt.y - kp.pt.y;
         }
 
         double cost = 0, lastCost = 0;
@@ -106,7 +121,7 @@ void OpticalFlowTracker::calculateOpticalFlow(const Range& range) {
 
             Eigen::Vector2d update = H.ldlt().solve(b);
              if (std::isnan(update[0])) {
-                cout << "update is nan" << std::endl;
+                std::cout << "update is nan" << std::endl;
                 succ = false;
                 break;
              }
@@ -126,7 +141,7 @@ void OpticalFlowTracker::calculateOpticalFlow(const Range& range) {
         }
 
         success[i] = succ;
-        kp2[i].pt = kp.pt + Pointf(dx, dy);
+        kp2[i].pt = kp.pt + Point2f(dx, dy);
     }
 }
 
@@ -142,8 +157,8 @@ void OpticalFlowTracker::calculateOpticalFlow(const Range& range) {
 void OpticalFlowSingleLevel(
     const Mat &img1,
     const Mat &img2,
-    const vector<KeyPoint> &kp1,
-    vector<KeyPoint> &kp2,
+    const vector<cv::KeyPoint> &kp1,
+    vector<cv::KeyPoint> &kp2,
     vector<bool> &success,
     bool inverse = false,
     bool has_initial_guess = false
@@ -151,11 +166,19 @@ void OpticalFlowSingleLevel(
     kp2.resize(kp1.size());
     success.resize(kp1.size());
 
-    OpticalFlowTracker tracker(im1, im2, kp1, kp2, success, inverse, has_initial_guess);
+    OpticalFlowTracker tracker(img1, img2, kp1, kp2, success, inverse, has_initial_guess);
 
+    // opencv4 not support parallel_for_ based on  std::bind
+#if 0    
     parallel_for_(Range(0,kp1.size()),
                     std::bind(&OpticalFlowTracker::calculateOpticalFlow, &tracker, 
                     std::placeholders::_1));
+#else 
+    for(int i=0; i< kp1.size(); i++) {
+        tracker.calculateOpticalFlow(Range(i,i+1));
+    }
+
+#endif
 }
 
 
@@ -225,11 +248,12 @@ void OpticalFlowMultiLevel(
 }
 
 int main(int argc, char** argv) {
-    string file1 = "./LK1.png";
-    string file2 = "./LK2.png";
+    string file1 = "./data/ch8/LK1.png";
+    string file2 = "./data/ch8/LK2.png";
 
     Mat im1 = imread(file1, 0);
     Mat im2 = imread(file2, 0);
+    std::vector<KeyPoint> kp1;
     cv::Ptr<GFTTDetector> detector = GFTTDetector::create(500, 0.01, 20);
     detector->detect(im1, kp1);
 
@@ -251,7 +275,7 @@ int main(int argc, char** argv) {
         pt1.push_back(kp.pt);
     }
 
-    vector<uchar> statue;
+    vector<uchar> status;
     vector<float> error;
 
     cv::calcOpticalFlowPyrLK(im1, im2, kp1, pt2, status, error);
@@ -260,8 +284,8 @@ int main(int argc, char** argv) {
 
 
     Mat im2_single;
-    cv::cvtColor(im2, img2_single, CV_GRAY2BGR);
-    for(int i=0; i< kp2_single.size(); i++) {
+    cv::cvtColor(im2, im2_single, CV_GRAY2BGR);
+    for(int i=0; i< (int)kp2_single.size(); i++) {
         if(succ_single[i]) {
             cv::circle(im2_single, kp2_single[i].pt, 2, cv::Scalar(0,250,0),2);
             cv::line(im2_single, kp1[i].pt, kp2_single[i].pt, cv::Scalar(0,250,0));
@@ -272,7 +296,7 @@ int main(int argc, char** argv) {
 
     Mat im2_multi;
     cv::cvtColor(im2, im2_multi, CV_GRAY2BGR);
-    for(int i=0; i< kp2_multi.size(); i++) {
+    for(int i=0; i< (int)kp2_multi.size(); i++) {
         if (succ_multi[i]) {
             cv::circle(im2_multi, kp2_multi[i].pt, 2, cv::Scalar(0,250,0),2);
             cv::line(im2_multi, kp1[i].pt, kp2_multi[i].pt, cv::Scalar(0,250,0));
@@ -282,9 +306,9 @@ int main(int argc, char** argv) {
 
     Mat im2_cv;
     cv::cvtColor(im2, im2_cv, CV_GRAY2BGR);
-    for(int i=0;i< pt2.size(); i++) {
+    for(int i=0;i< (int)pt2.size(); i++) {
         if (status[i]) {
-            cv::circle(im2_cv, pt2[i].pt, 2, cv::Scalar(0,250,0),2);
+            cv::circle(im2_cv, pt2[i], 2, cv::Scalar(0,250,0),2);
             cv::line(im2_cv, pt1[i], pt2[i], cv::Scalar(0,250,0));
         }
     }
